@@ -28,13 +28,10 @@ export const AuthProvider = ({ children }) => {
   const value = {
     currentUser,
     isAuthenticated: !!currentUser,
+    loading,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {!loading && children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export default AuthProvider;

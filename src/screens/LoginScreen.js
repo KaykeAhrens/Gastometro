@@ -21,19 +21,21 @@ const LoginScreen = ({ navigation }) => {
 
   const handleLogin = async () => {
     if (!email || !senha) {
-      alert("Erro", "Por favor, preencha todos os campos");
+      Alert.alert("Erro", "Por favor, preencha todos os campos");
       return;
     }
 
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, senha);
-      // Login bem-sucedido, navegar para a tela Home
-      // Por enquanto só mostraremos um alerta, já que não temos a Home ainda
-      alert("Sucesso", "Login realizado com sucesso!");
-      // Quando você criar a tela Home, poderá usar:
-      // navigation.navigate('Home');
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        senha
+      );
+      console.log("Login bem-sucedido:", userCredential.user.uid);
+      // Não precisa navegar manualmente, o AuthContext vai cuidar disso
     } catch (error) {
+      console.error("Erro no login:", error);
       let errorMessage = "Falha no login";
 
       if (
@@ -43,9 +45,11 @@ const LoginScreen = ({ navigation }) => {
         errorMessage = "E-mail ou senha incorretos";
       } else if (error.code === "auth/invalid-email") {
         errorMessage = "E-mail inválido";
+      } else if (error.code === "auth/invalid-credential") {
+        errorMessage = "Credenciais inválidas";
       }
 
-      alert("Erro", errorMessage);
+      Alert.alert("Erro", errorMessage);
     } finally {
       setLoading(false);
     }
@@ -58,11 +62,8 @@ const LoginScreen = ({ navigation }) => {
       <View style={styles.loginContainer}>
         <View style={styles.loginHeader}>
           <View style={styles.logoLoginContainer}>
-            <Image
-              source={require("../../assets/images/logo.png")}
-              style={styles.logoSmall}
-            />
-            <Text style={styles.logoText}>Gastrômetro</Text>
+            <View style={styles.logoSmall} />
+            <Text style={styles.logoText}>Gastômetro</Text>
           </View>
         </View>
         <View style={styles.formContainer}>
@@ -93,7 +94,7 @@ const LoginScreen = ({ navigation }) => {
           </View>
 
           <TouchableOpacity
-            style={styles.button}
+            style={[styles.button, loading && styles.buttonDisabled]}
             onPress={handleLogin}
             disabled={loading}
           >
@@ -183,6 +184,9 @@ const styles = StyleSheet.create({
     padding: 15,
     alignItems: "center",
     marginTop: 20,
+  },
+  buttonDisabled: {
+    backgroundColor: "#3A3A4C",
   },
   buttonText: {
     color: "white",
