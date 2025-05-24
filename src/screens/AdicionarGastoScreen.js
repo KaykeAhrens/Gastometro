@@ -160,19 +160,6 @@ const AdicionarGastoScreen = ({ navigation }) => {
           )}
         </TouchableOpacity>
       </View>
-
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem}>
-          <View style={styles.navIcon} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <View style={styles.navIcon} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <View style={styles.navIcon} />
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 };
