@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,24 +9,95 @@ import {
   StatusBar,
   Alert,
   ActivityIndicator,
+  ScrollView,
+  Modal,
 } from "react-native";
-import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { useAuth } from "../contexts/AuthContext";
+import {
+  doc,
+  updateDoc,
+  serverTimestamp,
+  collection,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
 import { db } from "../services/firebase";
 
 const EditarGastoScreen = ({ navigation, route }) => {
   const { gasto } = route.params;
-  const [titulo, setTitulo] = useState(gasto.titulo);
+  const { currentUser } = useAuth();
+  const [titulo, setTitulo] = useState(gasto.titulo || "");
   const [descricao, setDescricao] = useState(gasto.descricao || "");
-  const [valor, setValor] = useState(gasto.valor.toString().replace(".", ","));
+  const [valor, setValor] = useState(
+    gasto.valor ? gasto.valor.toString().replace(".", ",") : ""
+  );
+  const [categoriaSelecionada, setCategoriaSelecionada] = useState(null);
+  const [categorias, setCategorias] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [modalCategoriaVisible, setModalCategoriaVisible] = useState(false);
 
-  const handleAtualizarGasto = async () => {
+  // Buscar categorias e definir categoria atual
+  useEffect(() => {
+    if (currentUser) {
+      fetchCategorias();
+    }
+  }, [currentUser]);
+
+  const fetchCategorias = async () => {
+    try {
+      const categoriasQuery = query(
+        collection(db, "categorias"),
+        where("userId", "==", currentUser.uid)
+      );
+      const snapshot = await getDocs(categoriasQuery);
+      const categoriasData = [];
+
+      snapshot.forEach((doc) => {
+        categoriasData.push({ id: doc.id, ...doc.data() });
+      });
+
+      setCategorias(categoriasData);
+
+      // Definir categoria atual baseada no gasto
+      if (gasto.categoriaId) {
+        const categoriaAtual = categoriasData.find(
+          (cat) => cat.id === gasto.categoriaId
+        );
+        if (categoriaAtual) {
+          setCategoriaSelecionada(categoriaAtual);
+        }
+      } else if (gasto.categoria && gasto.categoria !== "Outros") {
+        const categoriaAtual = categoriasData.find(
+          (cat) => cat.nome === gasto.categoria
+        );
+        if (categoriaAtual) {
+          setCategoriaSelecionada(categoriaAtual);
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao buscar categorias:", error);
+    }
+  };
+
+  const handleSalvarGasto = async () => {
+    console.log("Iniciando atualização de gasto...");
+    console.log("Dados:", {
+      titulo,
+      descricao,
+      valor,
+      categoria: categoriaSelecionada?.nome,
+      gastoId: gasto.id,
+    });
+
     if (!titulo.trim() || !valor.trim()) {
       Alert.alert("Erro", "Por favor, preencha pelo menos o título e o valor");
       return;
     }
 
     const valorNumerico = parseFloat(valor.replace(",", "."));
+    console.log("Valor numérico:", valorNumerico);
+
     if (isNaN(valorNumerico) || valorNumerico <= 0) {
       Alert.alert("Erro", "Por favor, insira um valor válido");
       return;
@@ -34,23 +105,61 @@ const EditarGastoScreen = ({ navigation, route }) => {
 
     setLoading(true);
     try {
-      const gastoRef = doc(db, "gastos", gasto.id);
-      await updateDoc(gastoRef, {
+      console.log("Atualizando no Firebase...");
+      await updateDoc(doc(db, "gastos", gasto.id), {
         titulo: titulo.trim(),
-        descricao: descricao.trim(),
+        descricao: descricao.trim() || "",
         valor: valorNumerico,
+        categoria: categoriaSelecionada?.nome || "Outros",
+        categoriaId: categoriaSelecionada?.id || null,
         updatedAt: serverTimestamp(),
       });
 
-      console.log("Gasto atualizado com sucesso!");
-      navigation.goBack();
+      console.log("Documento atualizado com sucesso");
+
+      Alert.alert("Sucesso", "Gasto atualizado com sucesso!", [
+        {
+          text: "OK",
+          onPress: () => {
+            console.log("Navegando de volta...");
+            navigation.goBack();
+          },
+        },
+      ]);
     } catch (error) {
       console.error("Erro ao atualizar gasto:", error);
-      Alert.alert("Erro", "Erro ao atualizar gasto: " + error.message);
+      Alert.alert("Erro", `Erro ao atualizar gasto: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
+
+  const renderCategoriaOption = (categoria) => (
+    <TouchableOpacity
+      key={categoria.id}
+      style={styles.categoriaOption}
+      onPress={() => {
+        setCategoriaSelecionada(categoria);
+        setModalCategoriaVisible(false);
+      }}
+    >
+      <View style={styles.categoriaIconContainer}>
+        <Text style={styles.categoriaIcon}>{categoria.icone}</Text>
+      </View>
+      <View style={styles.categoriaInfo}>
+        <Text style={styles.categoriaNome}>{categoria.nome}</Text>
+        <Text style={styles.categoriaOrcamento}>
+          Orçamento: R$ {categoria.orcamento.toFixed(2).replace(".", ",")}
+        </Text>
+      </View>
+      <View
+        style={[
+          styles.categoriaCorIndicator,
+          { backgroundColor: categoria.cor },
+        ]}
+      />
+    </TouchableOpacity>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -65,7 +174,10 @@ const EditarGastoScreen = ({ navigation, route }) => {
         <View style={{ width: 60 }} />
       </View>
 
-      <View style={styles.formContainer}>
+      <ScrollView
+        style={styles.formContainer}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Campo Título */}
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Título *</Text>
@@ -108,32 +220,110 @@ const EditarGastoScreen = ({ navigation, route }) => {
           />
         </View>
 
-        {/* Botão Atualizar */}
+        {/* Seleção de Categoria */}
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Categoria</Text>
+          <TouchableOpacity
+            style={[styles.input, styles.categoriaSelector]}
+            onPress={() => setModalCategoriaVisible(true)}
+          >
+            {categoriaSelecionada ? (
+              <View style={styles.categoriaSelecionadaContainer}>
+                <Text style={styles.categoriaIconSelecionada}>
+                  {categoriaSelecionada.icone}
+                </Text>
+                <Text style={styles.categoriaNomeSelecionada}>
+                  {categoriaSelecionada.nome}
+                </Text>
+                <View
+                  style={[
+                    styles.categoriaCorSelecionada,
+                    { backgroundColor: categoriaSelecionada.cor },
+                  ]}
+                />
+              </View>
+            ) : (
+              <Text style={styles.categoriaSelectorPlaceholder}>
+                Outros (sem categoria)
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Botão Salvar */}
         <TouchableOpacity
-          style={[styles.updateButton, loading && styles.updateButtonDisabled]}
-          onPress={handleAtualizarGasto}
+          style={[styles.saveButton, loading && styles.saveButtonDisabled]}
+          onPress={handleSalvarGasto}
           disabled={loading}
         >
           {loading ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text style={styles.updateButtonText}>Atualizar</Text>
+            <Text style={styles.saveButtonText}>Salvar Alterações</Text>
           )}
         </TouchableOpacity>
-      </View>
 
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem}>
-          <View style={styles.navIcon} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <View style={styles.navIcon} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <View style={styles.navIcon} />
-        </TouchableOpacity>
-      </View>
+        <View style={{ height: 30 }} />
+      </ScrollView>
+
+      {/* Modal de Seleção de Categoria */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalCategoriaVisible}
+        onRequestClose={() => setModalCategoriaVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Selecionar Categoria</Text>
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={() => setModalCategoriaVisible(false)}
+              >
+                <Text style={styles.modalCloseText}>×</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalContent}>
+              {/* Opção "Outros" */}
+              <TouchableOpacity
+                style={styles.categoriaOption}
+                onPress={() => {
+                  setCategoriaSelecionada(null);
+                  setModalCategoriaVisible(false);
+                }}
+              >
+                <View style={styles.categoriaIconContainer}>
+                  <Text style={styles.categoriaIcon}>📂</Text>
+                </View>
+                <View style={styles.categoriaInfo}>
+                  <Text style={styles.categoriaNome}>Outros</Text>
+                  <Text style={styles.categoriaOrcamento}>
+                    Sem orçamento definido
+                  </Text>
+                </View>
+                <View
+                  style={[
+                    styles.categoriaCorIndicator,
+                    { backgroundColor: "#666" },
+                  ]}
+                />
+              </TouchableOpacity>
+
+              {categorias.length === 0 ? (
+                <View style={styles.emptyCategorias}>
+                  <Text style={styles.emptyCategoriaText}>
+                    Nenhuma categoria criada
+                  </Text>
+                </View>
+              ) : (
+                categorias.map(renderCategoriaOption)
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -188,36 +378,185 @@ const styles = StyleSheet.create({
     height: 80,
     textAlignVertical: "top",
   },
-  updateButton: {
-    backgroundColor: "#4D8FAC",
-    borderRadius: 12,
-    padding: 18,
+  categoriaSelector: {
+    flexDirection: "row",
     alignItems: "center",
-    marginTop: 30,
+    justifyContent: "space-between",
   },
-  updateButtonDisabled: {
-    backgroundColor: "#3A3A4C",
+  categoriaSelecionadaContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
   },
-  updateButtonText: {
+  categoriaIconSelecionada: {
+    fontSize: 20,
+    marginRight: 10,
+  },
+  categoriaNomeSelecionada: {
     color: "white",
+    fontSize: 16,
+    flex: 1,
+  },
+  categoriaCorSelecionada: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+  },
+  categoriaSelectorPlaceholder: {
+    color: "#666",
+    fontSize: 16,
+  },
+  saveButton: {
+    backgroundColor: "#4D8FAC",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 20,
+  },
+  saveButtonDisabled: {
+    backgroundColor: "#3A6D81",
+  },
+  saveButtonText: {
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContainer: {
+    backgroundColor: "#2A2A3C",
+    width: "90%",
+    maxHeight: "80%",
+    borderRadius: 12,
+    paddingBottom: 20,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#3A3A4D",
+  },
+  modalTitle: {
+    color: "#FFF",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  modalCloseButton: {
+    padding: 4,
+  },
+  modalCloseText: {
+    color: "#FFF",
+    fontSize: 24,
+  },
+  modalContent: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
+  },
+
+  categoriaOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#3A3A4D",
+  },
+  categoriaIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#4D8FAC20",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  categoriaIcon: {
+    fontSize: 18,
+  },
+  categoriaInfo: {
+    flex: 1,
+  },
+  categoriaNome: {
+    color: "#FFF",
     fontSize: 16,
     fontWeight: "600",
   },
-  bottomNav: {
-    flexDirection: "row",
-    backgroundColor: "#2A2A3C",
-    paddingVertical: 15,
-    justifyContent: "space-around",
+  categoriaOrcamento: {
+    color: "#BBB",
+    fontSize: 12,
+    marginTop: 2,
+  },
+  categoriaCorIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginLeft: 8,
+  },
+
+  emptyCategorias: {
+    paddingVertical: 20,
     alignItems: "center",
   },
-  navItem: {
-    padding: 10,
+  emptyCategoriaText: {
+    color: "#999",
+    fontSize: 14,
   },
-  navIcon: {
-    width: 24,
-    height: 24,
-    backgroundColor: "#666",
-    borderRadius: 4,
+
+  categoriaSelecionadaContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  categoriaIconSelecionada: {
+    fontSize: 18,
+    marginRight: 10,
+  },
+  categoriaNomeSelecionada: {
+    color: "#FFF",
+    fontSize: 16,
+    flex: 1,
+  },
+  categoriaCorSelecionada: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  categoriaSelector: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  categoriaSelectorPlaceholder: {
+    color: "#AAA",
+    fontSize: 16,
+  },
+
+  inputContainer: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    color: "#FFF",
+    fontSize: 14,
+    marginBottom: 6,
+  },
+  input: {
+    backgroundColor: "#2A2A3C",
+    color: "#FFF",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    fontSize: 16,
+  },
+  textArea: {
+    height: 80,
+    textAlignVertical: "top",
   },
 });
 

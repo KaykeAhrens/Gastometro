@@ -10,6 +10,8 @@ import LoginScreen from "../screens/LoginScreen";
 import RegisterScreen from "../screens/RegisterScreen";
 import HomeScreen from "../screens/HomeScreen";
 import PerfilScreen from "../screens/PerfilScreen";
+import DashboardScreen from "../screens/DashboardScreen";
+import CategoriasScreen from "../screens/CategoriasScreen";
 import AdicionarGastoScreen from "../screens/AdicionarGastoScreen";
 import EditarGastoScreen from "../screens/EditarGastoScreen";
 
@@ -22,10 +24,29 @@ const TabIcon = ({ focused, name }) => {
     switch (name) {
       case "Home":
         return { backgroundColor: focused ? "#4D8FAC" : "#666" };
+      case "Dashboard":
+        return { backgroundColor: focused ? "#4D8FAC" : "#666" };
+      case "Categorias":
+        return { backgroundColor: focused ? "#4D8FAC" : "#666" };
       case "Perfil":
         return { backgroundColor: focused ? "#4D8FAC" : "#666" };
       default:
         return { backgroundColor: "#666" };
+    }
+  };
+
+  const getIconContent = () => {
+    switch (name) {
+      case "Home":
+        return "🏠";
+      case "Dashboard":
+        return "📊";
+      case "Categorias":
+        return "📂";
+      case "Perfil":
+        return "👤";
+      default:
+        return "•";
     }
   };
 
@@ -35,9 +56,13 @@ const TabIcon = ({ focused, name }) => {
         width: 24,
         height: 24,
         borderRadius: 4,
+        justifyContent: "center",
+        alignItems: "center",
         ...getIconStyle(),
       }}
-    />
+    >
+      <Text style={{ fontSize: 12 }}>{getIconContent()}</Text>
+    </View>
   );
 };
 
@@ -70,6 +95,20 @@ const MainTabNavigator = () => {
         component={HomeScreen}
         options={{
           tabBarLabel: "Início",
+        }}
+      />
+      <Tab.Screen
+        name="Dashboard"
+        component={DashboardScreen}
+        options={{
+          tabBarLabel: "Relatórios",
+        }}
+      />
+      <Tab.Screen
+        name="Categorias"
+        component={CategoriasScreen}
+        options={{
+          tabBarLabel: "Categorias",
         }}
       />
       <Tab.Screen
