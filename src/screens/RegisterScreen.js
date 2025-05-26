@@ -72,7 +72,7 @@ const RegisterScreen = ({ navigation }) => {
                 // Caso a imagem não exista, deixe comentado acima e descomente abaixo:
                 // source={{ uri: 'https://via.placeholder.com/60' }}
               />
-              <Text style={styles.logoText}>Gastrômetro</Text>
+              <Text style={styles.logoText}>Gastômetro</Text>
             </View>
           </View>
 

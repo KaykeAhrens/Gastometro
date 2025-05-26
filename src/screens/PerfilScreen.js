@@ -139,31 +139,19 @@ const PerfilScreen = () => {
     }
   };
 
-  const excluirSaldo = (id) => {
-    Alert.alert(
-      "Confirmar Exclusão",
-      "Tem certeza que deseja excluir este registro de saldo?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Excluir",
-          style: "destructive",
-          onPress: async () => {
-            const novosSaldos = saldosMensais.filter((s) => s.id !== id);
-            try {
-              setSaldosMensais(novosSaldos);
-              await AsyncStorage.setItem(
-                `saldos_${currentUser?.uid}`,
-                JSON.stringify(novosSaldos)
-              );
-              Alert.alert("Sucesso", "Saldo excluído com sucesso!");
-            } catch (error) {
-              Alert.alert("Erro", "Erro ao excluir saldo.");
-            }
-          },
-        },
-      ]
-    );
+  const excluirSaldo = async (id) => {
+    const novosSaldos = saldosMensais.filter((s) => s.id !== id);
+    try {
+      setSaldosMensais(novosSaldos);
+      await AsyncStorage.setItem(
+        `saldos_${currentUser?.uid}`,
+        JSON.stringify(novosSaldos)
+      );
+      Alert.alert("Sucesso", "Saldo excluído com sucesso!");
+    } catch (error) {
+      Alert.alert("Erro", "Erro ao excluir saldo.");
+      console.error(error);
+    }
   };
 
   const renderSaldoItem = ({ item }) => (

@@ -16,6 +16,7 @@ import { useAuth } from "../contexts/AuthContext";
 import {
   doc,
   updateDoc,
+  deleteDoc,
   serverTimestamp,
   collection,
   query,
@@ -117,18 +118,31 @@ const EditarGastoScreen = ({ navigation, route }) => {
 
       console.log("Documento atualizado com sucesso");
 
-      Alert.alert("Sucesso", "Gasto atualizado com sucesso!", [
-        {
-          text: "OK",
-          onPress: () => {
-            console.log("Navegando de volta...");
-            navigation.goBack();
-          },
-        },
-      ]);
+      // Navegar automaticamente de volta
+      console.log("Navegando de volta automaticamente...");
+      navigation.goBack();
     } catch (error) {
       console.error("Erro ao atualizar gasto:", error);
       Alert.alert("Erro", `Erro ao atualizar gasto: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExcluirGasto = async () => {
+    setLoading(true);
+    try {
+      console.log("Excluindo gasto do Firebase...");
+      await deleteDoc(doc(db, "gastos", gasto.id));
+
+      console.log("Gasto excluído com sucesso");
+      Alert.alert("Sucesso", "Gasto excluído com sucesso!");
+
+      // Navegar de volta automaticamente
+      navigation.goBack();
+    } catch (error) {
+      console.error("Erro ao excluir gasto:", error);
+      Alert.alert("Erro", `Erro ao excluir gasto: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -171,7 +185,13 @@ const EditarGastoScreen = ({ navigation, route }) => {
           <Text style={styles.backButton}>← Voltar</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Editar Gasto</Text>
-        <View style={{ width: 60 }} />
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={handleExcluirGasto}
+          disabled={loading}
+        >
+          <Text style={styles.deleteButtonText}>🗑️</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -250,18 +270,37 @@ const EditarGastoScreen = ({ navigation, route }) => {
           </TouchableOpacity>
         </View>
 
-        {/* Botão Salvar */}
-        <TouchableOpacity
-          style={[styles.saveButton, loading && styles.saveButtonDisabled]}
-          onPress={handleSalvarGasto}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={styles.saveButtonText}>Salvar Alterações</Text>
-          )}
-        </TouchableOpacity>
+        {/* Botões de Ação */}
+        <View style={styles.actionButtonsContainer}>
+          {/* Botão Salvar */}
+          <TouchableOpacity
+            style={[styles.saveButton, loading && styles.saveButtonDisabled]}
+            onPress={handleSalvarGasto}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.saveButtonText}>Salvar Alterações</Text>
+            )}
+          </TouchableOpacity>
+
+          {/* Botão Excluir */}
+          <TouchableOpacity
+            style={[
+              styles.deleteButtonLarge,
+              loading && styles.deleteButtonDisabled,
+            ]}
+            onPress={handleExcluirGasto}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.deleteButtonLargeText}>Excluir Gasto</Text>
+            )}
+          </TouchableOpacity>
+        </View>
 
         <View style={{ height: 30 }} />
       </ScrollView>
@@ -351,6 +390,17 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
   },
+  deleteButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#2A2A3C",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  deleteButtonText: {
+    fontSize: 18,
+  },
   formContainer: {
     flex: 1,
     paddingHorizontal: 20,
@@ -406,17 +456,34 @@ const styles = StyleSheet.create({
     color: "#666",
     fontSize: 16,
   },
+  actionButtonsContainer: {
+    marginTop: 20,
+    gap: 15,
+  },
   saveButton: {
     backgroundColor: "#4D8FAC",
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: 15,
+    borderRadius: 12,
     alignItems: "center",
-    marginTop: 20,
   },
   saveButtonDisabled: {
     backgroundColor: "#3A6D81",
   },
   saveButtonText: {
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  deleteButtonLarge: {
+    backgroundColor: "#E74C3C",
+    paddingVertical: 15,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  deleteButtonDisabled: {
+    backgroundColor: "#A93226",
+  },
+  deleteButtonLargeText: {
     color: "#FFF",
     fontSize: 16,
     fontWeight: "bold",
@@ -507,56 +574,6 @@ const styles = StyleSheet.create({
   emptyCategoriaText: {
     color: "#999",
     fontSize: 14,
-  },
-
-  categoriaSelecionadaContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  categoriaIconSelecionada: {
-    fontSize: 18,
-    marginRight: 10,
-  },
-  categoriaNomeSelecionada: {
-    color: "#FFF",
-    fontSize: 16,
-    flex: 1,
-  },
-  categoriaCorSelecionada: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  categoriaSelector: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  categoriaSelectorPlaceholder: {
-    color: "#AAA",
-    fontSize: 16,
-  },
-
-  inputContainer: {
-    marginBottom: 16,
-  },
-  inputLabel: {
-    color: "#FFF",
-    fontSize: 14,
-    marginBottom: 6,
-  },
-  input: {
-    backgroundColor: "#2A2A3C",
-    color: "#FFF",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    fontSize: 16,
-  },
-  textArea: {
-    height: 80,
-    textAlignVertical: "top",
   },
 });
 

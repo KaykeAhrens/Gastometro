@@ -106,15 +106,9 @@ const AdicionarGastoScreen = ({ navigation }) => {
       setValor("");
       setCategoria("");
 
-      Alert.alert("Sucesso", "Gasto criado com sucesso!", [
-        {
-          text: "OK",
-          onPress: () => {
-            console.log("Navegando de volta...");
-            navigation.goBack();
-          },
-        },
-      ]);
+      // Navegar automaticamente de volta
+      console.log("Navegando de volta automaticamente...");
+      navigation.goBack();
     } catch (error) {
       console.error("Erro ao criar gasto:", error);
       Alert.alert("Erro", `Erro ao criar gasto: ${error.message}`);

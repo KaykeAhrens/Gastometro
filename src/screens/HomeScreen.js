@@ -22,6 +22,7 @@ import {
   doc,
   getDocs,
 } from "firebase/firestore";
+import { ScrollView } from "react-native-web";
 
 const HomeScreen = ({ navigation }) => {
   const { currentUser } = useAuth();
@@ -226,9 +227,23 @@ const HomeScreen = ({ navigation }) => {
 
       {/* Gastos Mensais */}
       <View style={styles.gastosSection}>
-        <Text style={styles.sectionTitle}>
-          Gastos Mensais ({gastos.length})
-        </Text>
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <Text style={styles.sectionTitle}>
+            Gastos Mensais ({gastos.length})
+          </Text>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => navigation.navigate("AdicionarGasto")}
+          >
+            <Text style={styles.addButtonText}>+</Text>
+          </TouchableOpacity>
+        </View>
 
         {loading ? (
           <View style={styles.loadingContainer}>
@@ -236,6 +251,7 @@ const HomeScreen = ({ navigation }) => {
           </View>
         ) : (
           <FlatList
+            style={styles.listaGastos}
             data={gastos}
             renderItem={renderGastoItem}
             keyExtractor={(item) => item.id}
@@ -251,14 +267,6 @@ const HomeScreen = ({ navigation }) => {
           />
         )}
       </View>
-
-      {/* Botão para adicionar gasto */}
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={() => navigation.navigate("AdicionarGasto")}
-      >
-        <Text style={styles.addButtonText}>+</Text>
-      </TouchableOpacity>
     </SafeAreaView>
   );
 };
@@ -323,6 +331,9 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     marginTop: 10,
+  },
+  listaGastos: {
+    marginBottom: 30,
   },
   sectionTitle: {
     color: "white",
@@ -397,24 +408,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   addButton: {
-    position: "absolute",
     right: 20,
-    bottom: 100,
-    backgroundColor: "#4D8FAC",
-    width: 60,
-    height: 60,
-    borderRadius: 30,
     justifyContent: "center",
     alignItems: "center",
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    margin: 5,
   },
   addButtonText: {
     color: "white",
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: "bold",
   },
   bottomNav: {
