@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { useAuth } from "../contexts/AuthContext";
 import { View, Text } from "react-native";
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 import SplashScreen from "../screens/SplashScreen";
 import LoginScreen from "../screens/LoginScreen";
@@ -19,51 +20,27 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 // Ícone customizado para as abas
-const TabIcon = ({ focused, name }) => {
-  const getIconStyle = () => {
-    switch (name) {
-      case "Home":
-        return { backgroundColor: focused ? "#4D8FAC" : "#666" };
-      case "Dashboard":
-        return { backgroundColor: focused ? "#4D8FAC" : "#666" };
-      case "Categorias":
-        return { backgroundColor: focused ? "#4D8FAC" : "#666" };
-      case "Perfil":
-        return { backgroundColor: focused ? "#4D8FAC" : "#666" };
-      default:
-        return { backgroundColor: "#666" };
-    }
-  };
+const TabIcon = ({ focused, name, color, size }) => {
+  let iconName;
 
-  const getIconContent = () => {
-    switch (name) {
-      case "Home":
-        return "🏠";
-      case "Dashboard":
-        return "📊";
-      case "Categorias":
-        return "📂";
-      case "Perfil":
-        return "👤";
-      default:
-        return "•";
-    }
-  };
+  switch (name) {
+    case "Home":
+      iconName = "home";
+      break;
+    case "Dashboard":
+      iconName = "dashboard";
+      break;
+    case "Categorias":
+      iconName = "folder";
+      break;
+    case "Perfil":
+      iconName = "person";
+      break;
+    default:
+      iconName = "help-outline";
+  }
 
-  return (
-    <View
-      style={{
-        width: 24,
-        height: 24,
-        borderRadius: 4,
-        justifyContent: "center",
-        alignItems: "center",
-        ...getIconStyle(),
-      }}
-    >
-      <Text style={{ fontSize: 12 }}>{getIconContent()}</Text>
-    </View>
-  );
+  return <Icon name={iconName} size={size} color={color} />;
 };
 
 // Navegador de abas principais
@@ -72,8 +49,8 @@ const MainTabNavigator = () => {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarIcon: ({ focused }) => (
-          <TabIcon focused={focused} name={route.name} />
+        tabBarIcon: ({ focused, color, size }) => (
+          <TabIcon focused={focused} name={route.name} size={size} color={color} />
         ),
         tabBarStyle: {
           backgroundColor: "#2A2A3C",
@@ -90,34 +67,11 @@ const MainTabNavigator = () => {
         tabBarInactiveTintColor: "#666",
       })}
     >
-      <Tab.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{
-          tabBarLabel: "Início",
-        }}
-      />
-      <Tab.Screen
-        name="Dashboard"
-        component={DashboardScreen}
-        options={{
-          tabBarLabel: "Relatórios",
-        }}
-      />
-      <Tab.Screen
-        name="Categorias"
-        component={CategoriasScreen}
-        options={{
-          tabBarLabel: "Categorias",
-        }}
-      />
-      <Tab.Screen
-        name="Perfil"
-        component={PerfilScreen}
-        options={{
-          tabBarLabel: "Perfil",
-        }}
-      />
+      <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarLabel: "Início" }} />
+      <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ tabBarLabel: "Relatórios" }} />
+      <Tab.Screen name="Categorias" component={CategoriasScreen} options={{ tabBarLabel: "Categorias" }} />
+      <Tab.Screen name="Perfil" component={PerfilScreen} options={{ tabBarLabel: "Perfil" }} />
+      
     </Tab.Navigator>
   );
 };

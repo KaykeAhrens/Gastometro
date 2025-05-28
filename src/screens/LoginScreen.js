@@ -62,7 +62,11 @@ const LoginScreen = ({ navigation }) => {
       <View style={styles.loginContainer}>
         <View style={styles.loginHeader}>
           <View style={styles.logoLoginContainer}>
-            <View style={styles.logoSmall} />
+            <View/>
+            <Image
+            source={require("../../assets/images/logo.png")}
+            style={styles.logo}
+            />
             <Text style={styles.logoText}>Gastômetro</Text>
           </View>
         </View>
@@ -139,12 +143,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
     borderRadius: 15,
     alignItems: "center",
-  },
-  logoSmall: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "#4D8FAC",
   },
   logoText: {
     marginTop: 5,

@@ -1,15 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-  Modal,
-  FlatList,
-} from "react-native";
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, Modal, FlatList, } from "react-native";
 import { useAuth } from "../contexts/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -19,12 +9,7 @@ const PerfilScreen = () => {
   const [saldosMensais, setSaldosMensais] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [editandoPerfil, setEditandoPerfil] = useState(false);
-  const [perfilUsuario, setPerfilUsuario] = useState({
-    nome: "",
-    telefone: "",
-    dataNascimento: "",
-    profissao: "",
-  });
+  const [perfilUsuario, setPerfilUsuario] = useState({nome: "", telefone: "", dataNascimento: "", profissao: "",});
 
   // Carregar dados salvos ao inicializar
   useEffect(() => {
@@ -184,9 +169,6 @@ const PerfilScreen = () => {
       <View style={styles.secao}>
         <Text style={styles.subtitulo}>Informações Básicas</Text>
         <Text style={styles.userInfo}>Email: {currentUser?.email}</Text>
-        <Text style={styles.userInfo}>
-          ID: {currentUser?.uid?.substring(0, 8)}...
-        </Text>
         <Text style={styles.userInfo}>
           Conta criada:{" "}
           {currentUser?.metadata?.creationTime

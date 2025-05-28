@@ -1,27 +1,9 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  StatusBar,
-  FlatList,
-  Alert,
-} from "react-native";
+import {View, Text, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, FlatList, Alert, } from "react-native";
 import { useAuth } from "../contexts/AuthContext";
 import { signOut } from "firebase/auth";
 import { auth, db } from "../services/firebase";
-import {
-  collection,
-  query,
-  where,
-  onSnapshot,
-  orderBy,
-  deleteDoc,
-  doc,
-  getDocs,
-} from "firebase/firestore";
+import { collection, query, where, onSnapshot, orderBy, deleteDoc, doc, getDocs, } from "firebase/firestore";
 import { ScrollView } from "react-native-web";
 
 const HomeScreen = ({ navigation }) => {
@@ -211,8 +193,8 @@ const HomeScreen = ({ navigation }) => {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.logoContainer}>
-          <View style={styles.logo} />
-          <Text style={styles.logoText}>Gastômetro</Text>
+          {/* <View style={styles.logo} /> */}
+          <Text style={styles.textoHeader}>Início</Text>
         </View>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
           <Text style={styles.logoutText}>Sair</Text>
@@ -238,10 +220,10 @@ const HomeScreen = ({ navigation }) => {
             Gastos Mensais ({gastos.length})
           </Text>
           <TouchableOpacity
-            style={styles.addButton}
+            style={styles.botaoAdicionar}
             onPress={() => navigation.navigate("AdicionarGasto")}
           >
-            <Text style={styles.addButtonText}>+</Text>
+            <Text style={styles.textoBotaoAdicionarGasto}>+</Text>
           </TouchableOpacity>
         </View>
 
@@ -257,9 +239,9 @@ const HomeScreen = ({ navigation }) => {
             keyExtractor={(item) => item.id}
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>Nenhum gasto cadastrado</Text>
-                <Text style={styles.emptySubtext}>
+              <View style={styles.containerVazio}>
+                <Text style={styles.textoVazio}>Nenhum gasto cadastrado</Text>
+                <Text style={styles.assuntoVazio}>
                   Toque no botão + para adicionar seu primeiro gasto
                 </Text>
               </View>
@@ -287,17 +269,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-  logo: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#4D8FAC",
-    marginRight: 10,
-  },
-  logoText: {
+  textoHeader: {
     color: "white",
-    fontSize: 18,
-    fontWeight: "600",
+    fontSize: 24,
+    fontWeight: "bold",
   },
   logoutButton: {
     backgroundColor: "#2A2A3C",
@@ -392,38 +367,31 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  emptyContainer: {
+  containerVazio: {
     alignItems: "center",
     marginTop: 50,
   },
-  emptyText: {
+  textoVazio: {
     color: "#CCCCCC",
     textAlign: "center",
     fontSize: 16,
     marginBottom: 8,
   },
-  emptySubtext: {
+  assuntoVazio: {
     color: "#888",
     textAlign: "center",
     fontSize: 14,
   },
-  addButton: {
+  botaoAdicionar: {
     right: 20,
     justifyContent: "center",
     alignItems: "center",
     margin: 5,
   },
-  addButtonText: {
+  textoBotaoAdicionarGasto: {
     color: "white",
     fontSize: 28,
     fontWeight: "bold",
-  },
-  bottomNav: {
-    flexDirection: "row",
-    backgroundColor: "#2A2A3C",
-    paddingVertical: 15,
-    justifyContent: "space-around",
-    alignItems: "center",
   },
   navItem: {
     padding: 10,

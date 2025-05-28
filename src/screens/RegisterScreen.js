@@ -59,8 +59,7 @@ const RegisterScreen = ({ navigation }) => {
   };
 
   return (
-    <ScrollView>
-      <SafeAreaView style={styles.container}>
+    <ScrollView style={styles.container}>
         <StatusBar barStyle="light-content" backgroundColor="#1E1E2E" />
 
         <View style={styles.loginContainer}>
@@ -149,7 +148,6 @@ const RegisterScreen = ({ navigation }) => {
             </TouchableOpacity>
           </View>
         </View>
-      </SafeAreaView>
     </ScrollView>
   );
 };

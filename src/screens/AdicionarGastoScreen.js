@@ -1,26 +1,7 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  StatusBar,
-  Alert,
-  ActivityIndicator,
-  ScrollView,
-  Modal,
-} from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, Alert, ActivityIndicator, ScrollView, Modal, } from "react-native";
 import { useAuth } from "../contexts/AuthContext";
-import {
-  collection,
-  addDoc,
-  serverTimestamp,
-  query,
-  where,
-  getDocs,
-} from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, query, where, getDocs, } from "firebase/firestore";
 import { db } from "../services/firebase";
 
 const AdicionarGastoScreen = ({ navigation }) => {

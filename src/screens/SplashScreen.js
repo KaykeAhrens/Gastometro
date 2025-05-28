@@ -14,7 +14,7 @@ const SplashScreen = ({ navigation }) => {
     const timer = setTimeout(() => {
       navigation.replace("Login");
     }, 2000);
-
+ 
     return () => clearTimeout(timer);
   }, [navigation]);
 

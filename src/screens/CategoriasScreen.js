@@ -23,7 +23,7 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import { db } from "../services/firebase";
-
+ 
 const { width } = Dimensions.get("window");
 
 const CategoriasScreen = ({ navigation }) => {
@@ -336,18 +336,15 @@ const CategoriasScreen = ({ navigation }) => {
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
           <Text style={styles.backButtonText}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Categorias</Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => setModalVisible(true)}
-        >
-          <Text style={styles.addButtonText}>+</Text>
+        </TouchableOpacity> */}
+        <Text style={styles.tituloHeader}>Categorias</Text>
+        <TouchableOpacity style={styles.botaoAdicionar} onPress={() => setModalVisible(true)}>
+          <Text style={styles.textoBotaoAdicionar}>+</Text>
         </TouchableOpacity>
       </View>
 
@@ -533,23 +530,18 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
   },
-  headerTitle: {
+  tituloHeader: {
     color: "white",
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: "bold",
   },
-  addButton: {
-    backgroundColor: "#4D8FAC",
-    padding: 10,
-    borderRadius: 20,
-    width: 40,
-    height: 40,
+  botaoAdicionar: {
     justifyContent: "center",
     alignItems: "center",
   },
-  addButtonText: {
+  textoBotaoAdicionar: {
     color: "white",
-    fontSize: 20,
+    fontSize: 28,
     fontWeight: "bold",
   },
   resumoContainer: {
