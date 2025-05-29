@@ -10,10 +10,10 @@ import {
   StatusBar,
   Alert,
   ActivityIndicator,
+  ScrollView,
 } from "react-native";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../services/firebase";
-import { ScrollView } from "react-native-web";
 
 const RegisterScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
@@ -24,12 +24,12 @@ const RegisterScreen = ({ navigation }) => {
 
   const handleRegister = async () => {
     if (senha !== confirmaSenha) {
-      alert("Erro", "As senhas não coincidem");
+      Alert.alert("Erro", "As senhas não coincidem");
       return;
     }
 
     if (senha.length < 6) {
-      alert("Erro", "A senha deve ter pelo menos 6 caracteres");
+      Alert.alert("Erro", "A senha deve ter pelo menos 6 caracteres");
       return;
     }
 
@@ -40,8 +40,7 @@ const RegisterScreen = ({ navigation }) => {
         email,
         senha
       );
-      // Aqui você pode adicionar mais dados do usuário no Firestore se desejar
-      alert("Sucesso", "Usuário cadastrado com sucesso!");
+      Alert.alert("Sucesso", "Usuário cadastrado com sucesso!");
       navigation.navigate("Login");
     } catch (error) {
       let errorMessage = "Erro ao cadastrar usuário";
@@ -52,7 +51,7 @@ const RegisterScreen = ({ navigation }) => {
         errorMessage = "E-mail inválido";
       }
 
-      alert("Erro", errorMessage);
+      Alert.alert("Erro", errorMessage);
     } finally {
       setLoading(false);
     }
@@ -60,94 +59,92 @@ const RegisterScreen = ({ navigation }) => {
 
   return (
     <ScrollView style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#1E1E2E" />
+      <StatusBar barStyle="light-content" backgroundColor="#1E1E2E" />
 
-        <View style={styles.loginContainer}>
-          <View style={styles.loginHeader}>
-            <View style={styles.logoLoginContainer}>
-              <Image
-                source={require("../../assets/images/logo.png")}
-                style={styles.logoSmall}
-                // Caso a imagem não exista, deixe comentado acima e descomente abaixo:
-                // source={{ uri: 'https://via.placeholder.com/60' }}
-              />
-              <Text style={styles.logoText}>Gastômetro</Text>
-            </View>
-          </View>
-
-          <View style={styles.formContainer}>
-            <Text style={styles.title}>Crie sua conta</Text>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Nome</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Digite seu nome"
-                placeholderTextColor="#666"
-                value={nome}
-                onChangeText={setNome}
-              />
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Email</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Digite seu email"
-                placeholderTextColor="#666"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Senha</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Digite sua senha"
-                placeholderTextColor="#666"
-                value={senha}
-                onChangeText={setSenha}
-                secureTextEntry
-              />
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Confirmar Senha</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Confirme sua senha"
-                placeholderTextColor="#666"
-                value={confirmaSenha}
-                onChangeText={setConfirmaSenha}
-                secureTextEntry
-              />
-            </View>
-
-            <TouchableOpacity
-              style={styles.button}
-              onPress={handleRegister}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.buttonText}>Cadastrar</Text>
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.loginLink}
-              onPress={() => navigation.navigate("Login")}
-            >
-              <Text style={styles.loginLinkText}>
-                Já tem uma conta? Entre aqui
-              </Text>
-            </TouchableOpacity>
+      <View style={styles.loginContainer}>
+        <View style={styles.loginHeader}>
+          <View style={styles.logoLoginContainer}>
+            <Image
+              source={require("../../assets/images/logo.png")}
+              style={styles.logoSmall}
+            />
+            <Text style={styles.logoText}>Gastômetro</Text>
           </View>
         </View>
+
+        <View style={styles.formContainer}>
+          <Text style={styles.title}>Crie sua conta</Text>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Nome</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Digite seu nome"
+              placeholderTextColor="#666"
+              value={nome}
+              onChangeText={setNome}
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Email</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Digite seu email"
+              placeholderTextColor="#666"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Senha</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Digite sua senha"
+              placeholderTextColor="#666"
+              value={senha}
+              onChangeText={setSenha}
+              secureTextEntry
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Confirmar Senha</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Confirme sua senha"
+              placeholderTextColor="#666"
+              value={confirmaSenha}
+              onChangeText={setConfirmaSenha}
+              secureTextEntry
+            />
+          </View>
+
+          <TouchableOpacity
+            style={styles.button}
+            onPress={handleRegister}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.buttonText}>Cadastrar</Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.loginLink}
+            onPress={() => navigation.navigate("Login")}
+          >
+            <Text style={styles.loginLinkText}>
+              Já tem uma conta? Entre aqui
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </ScrollView>
   );
 };

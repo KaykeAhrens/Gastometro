@@ -1,16 +1,60 @@
 import React, { useState, useEffect } from "react";
-import {View, Text, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, FlatList, Alert, } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  SafeAreaView,
+  StatusBar,
+  FlatList,
+  Alert,
+} from "react-native";
 import { useAuth } from "../contexts/AuthContext";
 import { signOut } from "firebase/auth";
 import { auth, db } from "../services/firebase";
-import { collection, query, where, onSnapshot, orderBy, deleteDoc, doc, getDocs, } from "firebase/firestore";
-import { ScrollView } from "react-native-web";
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  deleteDoc,
+  doc,
+  getDocs,
+} from "firebase/firestore";
 
 const HomeScreen = ({ navigation }) => {
   const { currentUser } = useAuth();
   const [gastos, setGastos] = useState([]);
+  const [categorias, setCategorias] = useState([]);
   const [saldoAtual, setSaldoAtual] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  // Função para buscar categorias
+  const fetchCategorias = async () => {
+    if (!currentUser) return;
+
+    try {
+      const categoriasQuery = query(
+        collection(db, "categorias"),
+        where("userId", "==", currentUser.uid)
+      );
+
+      const snapshot = await getDocs(categoriasQuery);
+      const categoriasData = [];
+
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        categoriasData.push({
+          id: doc.id,
+          ...data,
+        });
+      });
+
+      setCategorias(categoriasData);
+    } catch (error) {
+      console.error("Erro ao buscar categorias:", error);
+    }
+  };
 
   // Função para buscar gastos
   const fetchGastos = async () => {
@@ -64,19 +108,36 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
+  // Função para obter o ícone da categoria
+  const getCategoryIcon = (nomeCategoria) => {
+    if (!nomeCategoria) return "📂"; // Ícone padrão para "Outros"
+
+    const categoria = categorias.find((cat) => cat.nome === nomeCategoria);
+    return categoria ? categoria.icone : "📂";
+  };
+
+  // Função para obter a cor da categoria
+  const getCategoryColor = (nomeCategoria) => {
+    if (!nomeCategoria) return "#666"; // Cor padrão para "Outros"
+
+    const categoria = categorias.find((cat) => cat.nome === nomeCategoria);
+    return categoria ? categoria.cor : "#666";
+  };
+
   useEffect(() => {
     if (!currentUser) return;
 
     // Buscar dados iniciais
+    fetchCategorias();
     fetchGastos();
 
-    // Configurar listener para atualizações em tempo real
+    // Configurar listener para atualizações em tempo real dos gastos
     const gastosQuery = query(
       collection(db, "gastos"),
       where("userId", "==", currentUser.uid)
     );
 
-    const unsubscribe = onSnapshot(
+    const unsubscribeGastos = onSnapshot(
       gastosQuery,
       (snapshot) => {
         console.log("Snapshot recebido:", snapshot.size, "documentos");
@@ -117,7 +178,24 @@ const HomeScreen = ({ navigation }) => {
       }
     );
 
-    return () => unsubscribe();
+    // Configurar listener para atualizações em tempo real das categorias
+    const categoriasQuery = query(
+      collection(db, "categorias"),
+      where("userId", "==", currentUser.uid)
+    );
+
+    const unsubscribeCategorias = onSnapshot(categoriasQuery, (snapshot) => {
+      const categoriasData = [];
+      snapshot.forEach((doc) => {
+        categoriasData.push({ id: doc.id, ...doc.data() });
+      });
+      setCategorias(categoriasData);
+    });
+
+    return () => {
+      unsubscribeGastos();
+      unsubscribeCategorias();
+    };
   }, [currentUser]);
 
   // Recarregar dados quando a tela ganha foco
@@ -125,6 +203,7 @@ const HomeScreen = ({ navigation }) => {
     const unsubscribe = navigation.addListener("focus", () => {
       console.log("Tela HomeScreen ganhou foco - recarregando dados");
       if (currentUser) {
+        fetchCategorias();
         fetchGastos();
       }
     });
@@ -171,14 +250,24 @@ const HomeScreen = ({ navigation }) => {
       onPress={() => navigation.navigate("EditarGasto", { gasto: item })}
       onLongPress={() => handleDeleteGasto(item.id)}
     >
-      <View style={styles.gastoIcon}>
-        <Text style={styles.gastoIconText}>$</Text>
+      <View
+        style={[
+          styles.gastoIcon,
+          { backgroundColor: getCategoryColor(item.categoria) },
+        ]}
+      >
+        <Text style={styles.gastoIconText}>
+          {getCategoryIcon(item.categoria)}
+        </Text>
       </View>
       <View style={styles.gastoInfo}>
         <Text style={styles.gastoTitle}>{item.titulo || "Sem título"}</Text>
         {item.descricao ? (
           <Text style={styles.gastoDescription}>{item.descricao}</Text>
         ) : null}
+        {item.categoria && (
+          <Text style={styles.gastoCategory}>{item.categoria}</Text>
+        )}
       </View>
       <View style={styles.gastoValue}>
         <Text style={styles.gastoValueText}>{formatCurrency(item.valor)}</Text>
@@ -216,9 +305,7 @@ const HomeScreen = ({ navigation }) => {
             alignItems: "center",
           }}
         >
-          <Text style={styles.sectionTitle}>
-            Gastos Mensais ({gastos.length})
-          </Text>
+          <Text style={styles.sectionTitle}>Gastos ({gastos.length})</Text>
           <TouchableOpacity
             style={styles.botaoAdicionar}
             onPress={() => navigation.navigate("AdicionarGasto")}
@@ -333,7 +420,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   gastoIcon: {
-    backgroundColor: "#4D8FAC",
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -342,7 +428,6 @@ const styles = StyleSheet.create({
     marginRight: 15,
   },
   gastoIconText: {
-    color: "white",
     fontSize: 18,
     fontWeight: "bold",
   },
@@ -358,6 +443,12 @@ const styles = StyleSheet.create({
   gastoDescription: {
     color: "#CCCCCC",
     fontSize: 14,
+    marginBottom: 2,
+  },
+  gastoCategory: {
+    color: "#4D8FAC",
+    fontSize: 12,
+    fontStyle: "italic",
   },
   gastoValue: {
     alignItems: "flex-end",

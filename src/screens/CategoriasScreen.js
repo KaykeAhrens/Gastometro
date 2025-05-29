@@ -23,7 +23,7 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import { db } from "../services/firebase";
- 
+
 const { width } = Dimensions.get("window");
 
 const CategoriasScreen = ({ navigation }) => {
@@ -144,6 +144,19 @@ const CategoriasScreen = ({ navigation }) => {
     return gastosPorCategoria;
   };
 
+  const handleNovaCategoria = () => {
+    // Limpar todos os estados de edição
+    setEditingCategoria(null);
+    setFormData({ nome: "", orcamento: "", icone: "💰", cor: "#4D8FAC" });
+    setModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalVisible(false);
+    setEditingCategoria(null);
+    setFormData({ nome: "", orcamento: "", icone: "💰", cor: "#4D8FAC" });
+  };
+
   const handleSaveCategoria = async () => {
     if (!formData.nome.trim()) {
       Alert.alert("Erro", "Nome da categoria é obrigatório");
@@ -177,9 +190,7 @@ const CategoriasScreen = ({ navigation }) => {
         Alert.alert("Sucesso", "Categoria criada com sucesso!");
       }
 
-      setModalVisible(false);
-      setEditingCategoria(null);
-      setFormData({ nome: "", orcamento: "", icone: "💰", cor: "#4D8FAC" });
+      handleCloseModal();
     } catch (error) {
       console.error("Erro ao salvar categoria:", error);
       Alert.alert("Erro", "Erro ao salvar categoria");
@@ -343,7 +354,10 @@ const CategoriasScreen = ({ navigation }) => {
           <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity> */}
         <Text style={styles.tituloHeader}>Categorias</Text>
-        <TouchableOpacity style={styles.botaoAdicionar} onPress={() => setModalVisible(true)}>
+        <TouchableOpacity
+          style={styles.botaoAdicionar}
+          onPress={handleNovaCategoria}
+        >
           <Text style={styles.textoBotaoAdicionar}>+</Text>
         </TouchableOpacity>
       </View>
@@ -401,7 +415,7 @@ const CategoriasScreen = ({ navigation }) => {
         animationType="slide"
         transparent={true}
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
+        onRequestClose={handleCloseModal}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
@@ -411,7 +425,7 @@ const CategoriasScreen = ({ navigation }) => {
               </Text>
               <TouchableOpacity
                 style={styles.modalCloseButton}
-                onPress={() => setModalVisible(false)}
+                onPress={handleCloseModal}
               >
                 <Text style={styles.modalCloseText}>×</Text>
               </TouchableOpacity>
@@ -484,7 +498,7 @@ const CategoriasScreen = ({ navigation }) => {
             <View style={styles.modalActions}>
               <TouchableOpacity
                 style={styles.modalCancelButton}
-                onPress={() => setModalVisible(false)}
+                onPress={handleCloseModal}
               >
                 <Text style={styles.modalCancelText}>Cancelar</Text>
               </TouchableOpacity>

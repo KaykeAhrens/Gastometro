@@ -1,7 +1,27 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, Alert, ActivityIndicator, ScrollView, Modal, } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  SafeAreaView,
+  StatusBar,
+  Alert,
+  ActivityIndicator,
+  ScrollView,
+  Modal,
+} from "react-native";
 import { useAuth } from "../contexts/AuthContext";
-import { collection, addDoc, serverTimestamp, query, where, getDocs, } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  query,
+  where,
+  getDocs,
+  Timestamp,
+} from "firebase/firestore";
 import { db } from "../services/firebase";
 
 const AdicionarGastoScreen = ({ navigation }) => {
@@ -13,6 +33,11 @@ const AdicionarGastoScreen = ({ navigation }) => {
   const [categorias, setCategorias] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+
+  // Novos estados para data
+  const [dataGasto, setDataGasto] = useState(new Date());
+  const [modalDataVisible, setModalDataVisible] = useState(false);
+  const [tempDate, setTempDate] = useState(new Date());
 
   // Buscar categorias do usuário
   useEffect(() => {
@@ -45,6 +70,7 @@ const AdicionarGastoScreen = ({ navigation }) => {
       descricao,
       valor,
       categoria,
+      dataGasto,
       userId: currentUser?.uid,
     });
 
@@ -75,7 +101,7 @@ const AdicionarGastoScreen = ({ navigation }) => {
         valor: valorNumerico,
         categoria: categoria || "Outros",
         userId: currentUser.uid,
-        createdAt: serverTimestamp(),
+        createdAt: Timestamp.fromDate(dataGasto), // Usando a data selecionada
         updatedAt: serverTimestamp(),
       });
 
@@ -86,6 +112,7 @@ const AdicionarGastoScreen = ({ navigation }) => {
       setDescricao("");
       setValor("");
       setCategoria("");
+      setDataGasto(new Date()); // Reset para data atual
 
       // Navegar automaticamente de volta
       console.log("Navegando de volta automaticamente...");
@@ -101,6 +128,188 @@ const AdicionarGastoScreen = ({ navigation }) => {
   const handleSelectCategoria = (categoriaSelecionada) => {
     setCategoria(categoriaSelecionada.nome);
     setModalVisible(false);
+  };
+
+  // Funções para o seletor de data
+  const formatarData = (data) => {
+    return data.toLocaleDateString("pt-BR");
+  };
+
+  const handleConfirmarData = () => {
+    setDataGasto(tempDate);
+    setModalDataVisible(false);
+  };
+
+  const handleCancelarData = () => {
+    setTempDate(dataGasto);
+    setModalDataVisible(false);
+  };
+
+  // Componente DatePicker
+  const DatePickerModal = () => {
+    const anos = [];
+    const anoAtual = new Date().getFullYear();
+    for (let i = anoAtual; i >= anoAtual - 5; i--) {
+      anos.push(i);
+    }
+
+    const meses = [
+      { nome: "Janeiro", valor: 0 },
+      { nome: "Fevereiro", valor: 1 },
+      { nome: "Março", valor: 2 },
+      { nome: "Abril", valor: 3 },
+      { nome: "Maio", valor: 4 },
+      { nome: "Junho", valor: 5 },
+      { nome: "Julho", valor: 6 },
+      { nome: "Agosto", valor: 7 },
+      { nome: "Setembro", valor: 8 },
+      { nome: "Outubro", valor: 9 },
+      { nome: "Novembro", valor: 10 },
+      { nome: "Dezembro", valor: 11 },
+    ];
+
+    const obterDiasDoMes = (ano, mes) => {
+      const diasNoMes = new Date(ano, mes + 1, 0).getDate();
+      const dias = [];
+      for (let i = 1; i <= diasNoMes; i++) {
+        dias.push(i);
+      }
+      return dias;
+    };
+
+    const dias = obterDiasDoMes(tempDate.getFullYear(), tempDate.getMonth());
+
+    const alterarAno = (ano) => {
+      const novaData = new Date(tempDate);
+      novaData.setFullYear(ano);
+      setTempDate(novaData);
+    };
+
+    const alterarMes = (mes) => {
+      const novaData = new Date(tempDate);
+      novaData.setMonth(mes);
+      setTempDate(novaData);
+    };
+
+    const alterarDia = (dia) => {
+      const novaData = new Date(tempDate);
+      novaData.setDate(dia);
+      setTempDate(novaData);
+    };
+
+    return (
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalDataVisible}
+        onRequestClose={handleCancelarData}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.dateModalContainer}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={handleCancelarData}>
+                <Text style={styles.modalCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Selecionar Data</Text>
+              <TouchableOpacity onPress={handleConfirmarData}>
+                <Text style={styles.modalConfirmText}>OK</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.datePickerContainer}>
+              {/* Seletor de Ano */}
+              <View style={styles.dateColumn}>
+                <Text style={styles.dateColumnTitle}>Ano</Text>
+                <ScrollView style={styles.dateScroll}>
+                  {anos.map((ano) => (
+                    <TouchableOpacity
+                      key={ano}
+                      style={[
+                        styles.dateOption,
+                        tempDate.getFullYear() === ano &&
+                          styles.dateOptionSelected,
+                      ]}
+                      onPress={() => alterarAno(ano)}
+                    >
+                      <Text
+                        style={[
+                          styles.dateOptionText,
+                          tempDate.getFullYear() === ano &&
+                            styles.dateOptionTextSelected,
+                        ]}
+                      >
+                        {ano}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+
+              {/* Seletor de Mês */}
+              <View style={styles.dateColumn}>
+                <Text style={styles.dateColumnTitle}>Mês</Text>
+                <ScrollView style={styles.dateScroll}>
+                  {meses.map((mes) => (
+                    <TouchableOpacity
+                      key={mes.valor}
+                      style={[
+                        styles.dateOption,
+                        tempDate.getMonth() === mes.valor &&
+                          styles.dateOptionSelected,
+                      ]}
+                      onPress={() => alterarMes(mes.valor)}
+                    >
+                      <Text
+                        style={[
+                          styles.dateOptionText,
+                          tempDate.getMonth() === mes.valor &&
+                            styles.dateOptionTextSelected,
+                        ]}
+                      >
+                        {mes.nome}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+
+              {/* Seletor de Dia */}
+              <View style={styles.dateColumn}>
+                <Text style={styles.dateColumnTitle}>Dia</Text>
+                <ScrollView style={styles.dateScroll}>
+                  {dias.map((dia) => (
+                    <TouchableOpacity
+                      key={dia}
+                      style={[
+                        styles.dateOption,
+                        tempDate.getDate() === dia && styles.dateOptionSelected,
+                      ]}
+                      onPress={() => alterarDia(dia)}
+                    >
+                      <Text
+                        style={[
+                          styles.dateOptionText,
+                          tempDate.getDate() === dia &&
+                            styles.dateOptionTextSelected,
+                        ]}
+                      >
+                        {dia}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+
+            <View style={styles.datePreview}>
+              <Text style={styles.datePreviewText}>
+                Data selecionada: {formatarData(tempDate)}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
   };
 
   const renderCategoriaItem = (cat) => (
@@ -179,6 +388,24 @@ const AdicionarGastoScreen = ({ navigation }) => {
           />
         </View>
 
+        {/* Campo Data */}
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Data do Gasto</Text>
+          <TouchableOpacity
+            style={[styles.input, styles.dateSelector]}
+            onPress={() => {
+              setTempDate(dataGasto);
+              setModalDataVisible(true);
+            }}
+          >
+            <Text style={styles.dateText}>{formatarData(dataGasto)}</Text>
+            <Text style={styles.selectorArrow}>📅</Text>
+          </TouchableOpacity>
+          <Text style={styles.dateHint}>
+            Selecione a data em que o gasto foi realizado
+          </Text>
+        </View>
+
         {/* Campo Categoria */}
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Categoria</Text>
@@ -206,16 +433,6 @@ const AdicionarGastoScreen = ({ navigation }) => {
           )}
         </View>
 
-        {/* Debug Info */}
-        <View style={styles.debugContainer}>
-          <Text style={styles.debugText}>
-            User ID: {currentUser?.uid || "Não encontrado"}
-          </Text>
-          <Text style={styles.debugText}>
-            Categoria selecionada: {categoria || "Nenhuma"}
-          </Text>
-        </View>
-
         {/* Botão Criar */}
         <TouchableOpacity
           style={[styles.createButton, loading && styles.createButtonDisabled]}
@@ -231,6 +448,9 @@ const AdicionarGastoScreen = ({ navigation }) => {
 
         <View style={{ height: 50 }} />
       </ScrollView>
+
+      {/* Modal do DatePicker */}
+      <DatePickerModal />
 
       {/* Modal para selecionar categoria */}
       <Modal
@@ -355,6 +575,91 @@ const styles = StyleSheet.create({
     height: 80,
     textAlignVertical: "top",
   },
+
+  // Estilos para o seletor de data
+  dateSelector: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  dateText: {
+    color: "white",
+    fontSize: 16,
+  },
+  dateHint: {
+    color: "#999",
+    fontSize: 12,
+    marginTop: 5,
+  },
+
+  // Estilos para o modal de data
+  dateModalContainer: {
+    backgroundColor: "#2A2A3C",
+    borderRadius: 12,
+    width: "95%",
+    maxHeight: "80%",
+  },
+  datePickerContainer: {
+    flexDirection: "row",
+    height: 200,
+    paddingHorizontal: 10,
+  },
+  dateColumn: {
+    flex: 1,
+    marginHorizontal: 5,
+  },
+  dateColumnTitle: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
+    textAlign: "center",
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#3A3A4C",
+  },
+  dateScroll: {
+    flex: 1,
+  },
+  dateOption: {
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    alignItems: "center",
+  },
+  dateOptionSelected: {
+    backgroundColor: "#4D8FAC",
+    borderRadius: 6,
+    marginVertical: 2,
+  },
+  dateOptionText: {
+    color: "#CCCCCC",
+    fontSize: 14,
+  },
+  dateOptionTextSelected: {
+    color: "white",
+    fontWeight: "600",
+  },
+  datePreview: {
+    padding: 15,
+    borderTopWidth: 1,
+    borderTopColor: "#3A3A4C",
+    alignItems: "center",
+  },
+  datePreviewText: {
+    color: "#4D8FAC",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  modalCancelText: {
+    color: "#E74C3C",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  modalConfirmText: {
+    color: "#4D8FAC",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+
   categoriaSelector: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -378,16 +683,6 @@ const styles = StyleSheet.create({
   clearCategoriaText: {
     color: "#E74C3C",
     fontSize: 14,
-  },
-  debugContainer: {
-    backgroundColor: "#2A2A3C",
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 20,
-  },
-  debugText: {
-    color: "#CCCCCC",
-    fontSize: 12,
   },
   createButton: {
     backgroundColor: "#4D8FAC",

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../services/firebase";
+import { useFocusEffect } from "@react-navigation/native";
 
 const { width } = Dimensions.get("window");
 
@@ -28,15 +29,63 @@ const DashboardScreen = ({ navigation }) => {
   });
   const [gastosPorMes, setGastosPorMes] = useState([]);
   const [topGastos, setTopGastos] = useState([]);
+  const [ultimaAtualizacao, setUltimaAtualizacao] = useState(new Date());
 
+  // Refs para controlar os intervalos
+  const intervalRef = useRef(null);
+  const timeoutRef = useRef(null);
+
+  // Carrega dados quando a tela ganha foco
+  useFocusEffect(
+    React.useCallback(() => {
+      if (currentUser) {
+        fetchDadosDashboard();
+        iniciarAutoRefresh();
+      }
+
+      // Cleanup quando a tela perde foco
+      return () => {
+        pararAutoRefresh();
+      };
+    }, [currentUser])
+  );
+
+  // Cleanup quando o componente é desmontado
   useEffect(() => {
-    if (currentUser) {
-      fetchDadosDashboard();
-    }
-  }, [currentUser]);
+    return () => {
+      pararAutoRefresh();
+    };
+  }, []);
 
-  const fetchDadosDashboard = async () => {
+  const iniciarAutoRefresh = () => {
+    // Para qualquer intervalo existente
+    pararAutoRefresh();
+
+    // Configura auto refresh a cada 30 segundos
+    intervalRef.current = setInterval(() => {
+      fetchDadosDashboard(false); // false para não mostrar loading
+    }, 30000); // 30 segundos
+
+    console.log("Auto refresh iniciado - atualizações a cada 30 segundos");
+  };
+
+  const pararAutoRefresh = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  };
+
+  const fetchDadosDashboard = async (mostrarLoading = true) => {
     try {
+      if (mostrarLoading) {
+        setLoading(true);
+      }
+
       const gastosQuery = query(
         collection(db, "gastos"),
         where("userId", "==", currentUser.uid)
@@ -58,11 +107,34 @@ const DashboardScreen = ({ navigation }) => {
       calcularEstatisticas(gastosData);
       processarGastosPorMes(gastosData);
       processarTopGastos(gastosData);
-      setLoading(false);
+      setUltimaAtualizacao(new Date());
+
+      if (mostrarLoading) {
+        setLoading(false);
+      }
+
+      console.log(
+        `Dashboard atualizado: ${gastosData.length} gastos encontrados`
+      );
     } catch (error) {
       console.error("Erro ao buscar dados:", error);
-      setLoading(false);
+      if (mostrarLoading) {
+        setLoading(false);
+      }
     }
+  };
+
+  const refreshManual = () => {
+    // Para o auto refresh temporariamente
+    pararAutoRefresh();
+
+    // Faz refresh imediato
+    fetchDadosDashboard(true);
+
+    // Reinicia auto refresh após 2 segundos
+    timeoutRef.current = setTimeout(() => {
+      iniciarAutoRefresh();
+    }, 2000);
   };
 
   const calcularEstatisticas = (dados) => {
@@ -194,11 +266,10 @@ const DashboardScreen = ({ navigation }) => {
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Dashboard</Text>
-        <TouchableOpacity
-          style={styles.refreshButton}
-          onPress={fetchDadosDashboard}
-        >
+        <View>
+          <Text style={styles.headerTitle}>Dashboard</Text>
+        </View>
+        <TouchableOpacity style={styles.refreshButton} onPress={refreshManual}>
           <Text style={styles.refreshText}>↻</Text>
         </TouchableOpacity>
       </View>
