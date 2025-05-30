@@ -23,6 +23,7 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import { db } from "../services/firebase";
+import Icon from "react-native-vector-icons/MaterialIcons";
 
 const { width } = Dimensions.get("window");
 
@@ -36,23 +37,31 @@ const CategoriasScreen = ({ navigation }) => {
   const [formData, setFormData] = useState({
     nome: "",
     orcamento: "",
-    icone: "💰",
+    icone: "attach-money",
     cor: "#4D8FAC",
   });
 
   const icones = [
-    "💰",
-    "🏠",
-    "🚗",
-    "🍔",
-    "👕",
-    "🎮",
-    "📱",
-    "⚡",
-    "🏥",
-    "🎓",
-    "🎬",
-    "🛒",
+    "attach-money",
+    "home",
+    "directions-car",
+    "restaurant",
+    "shopping-bag",
+    "sports-esports",
+    "phone-android",
+    "flash-on",
+    "local-hospital",
+    "school",
+    "movie",
+    "shopping-cart",
+    "work",
+    "train",
+    "fitness-center",
+    "pets",
+    "local-gas-station",
+    "wifi",
+    "music-note",
+    "cake",
   ];
   const cores = [
     "#4D8FAC",
@@ -147,14 +156,24 @@ const CategoriasScreen = ({ navigation }) => {
   const handleNovaCategoria = () => {
     // Limpar todos os estados de edição
     setEditingCategoria(null);
-    setFormData({ nome: "", orcamento: "", icone: "💰", cor: "#4D8FAC" });
+    setFormData({
+      nome: "",
+      orcamento: "",
+      icone: "attach-money",
+      cor: "#4D8FAC",
+    });
     setModalVisible(true);
   };
 
   const handleCloseModal = () => {
     setModalVisible(false);
     setEditingCategoria(null);
-    setFormData({ nome: "", orcamento: "", icone: "💰", cor: "#4D8FAC" });
+    setFormData({
+      nome: "",
+      orcamento: "",
+      icone: "attach-money",
+      cor: "#4D8FAC",
+    });
   };
 
   const handleSaveCategoria = async () => {
@@ -260,7 +279,7 @@ const CategoriasScreen = ({ navigation }) => {
       >
         <View style={styles.categoriaHeader}>
           <View style={styles.categoriaIconContainer}>
-            <Text style={styles.categoriaIcon}>{categoria.icone}</Text>
+            <Icon name={categoria.icone} size={20} color="white" />
           </View>
           <View style={styles.categoriaInfo}>
             <Text style={styles.categoriaNome}>{categoria.nome}</Text>
@@ -312,7 +331,7 @@ const CategoriasScreen = ({ navigation }) => {
       <View style={[styles.categoriaItem, { borderLeftColor: "#666" }]}>
         <View style={styles.categoriaHeader}>
           <View style={styles.categoriaIconContainer}>
-            <Text style={styles.categoriaIcon}>📂</Text>
+            <Icon name="folder" size={20} color="white" />
           </View>
           <View style={styles.categoriaInfo}>
             <Text style={styles.categoriaNome}>Outros</Text>
@@ -347,12 +366,6 @@ const CategoriasScreen = ({ navigation }) => {
 
       {/* Header */}
       <View style={styles.header}>
-        {/* <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.backButtonText}>←</Text>
-        </TouchableOpacity> */}
         <Text style={styles.tituloHeader}>Categorias</Text>
         <TouchableOpacity
           style={styles.botaoAdicionar}
@@ -471,7 +484,7 @@ const CategoriasScreen = ({ navigation }) => {
                       ]}
                       onPress={() => setFormData({ ...formData, icone })}
                     >
-                      <Text style={styles.iconOptionText}>{icone}</Text>
+                      <Icon name={icone} size={20} color="white" />
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -763,6 +776,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     width: 50,
     alignItems: "center",
+    justifyContent: "center",
   },
   iconOptionSelected: {
     backgroundColor: "#4D8FAC",

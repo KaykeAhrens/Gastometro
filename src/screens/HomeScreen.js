@@ -21,6 +21,7 @@ import {
   doc,
   getDocs,
 } from "firebase/firestore";
+import Icon from "react-native-vector-icons/MaterialIcons";
 
 const HomeScreen = ({ navigation }) => {
   const { currentUser } = useAuth();
@@ -110,10 +111,10 @@ const HomeScreen = ({ navigation }) => {
 
   // Função para obter o ícone da categoria
   const getCategoryIcon = (nomeCategoria) => {
-    if (!nomeCategoria) return "📂"; // Ícone padrão para "Outros"
+    if (!nomeCategoria) return "folder"; // Ícone padrão para "Outros"
 
     const categoria = categorias.find((cat) => cat.nome === nomeCategoria);
-    return categoria ? categoria.icone : "📂";
+    return categoria ? categoria.icone : "folder";
   };
 
   // Função para obter a cor da categoria
@@ -256,9 +257,7 @@ const HomeScreen = ({ navigation }) => {
           { backgroundColor: getCategoryColor(item.categoria) },
         ]}
       >
-        <Text style={styles.gastoIconText}>
-          {getCategoryIcon(item.categoria)}
-        </Text>
+        <Icon name={getCategoryIcon(item.categoria)} size={20} color="white" />
       </View>
       <View style={styles.gastoInfo}>
         <Text style={styles.gastoTitle}>{item.titulo || "Sem título"}</Text>

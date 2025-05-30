@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, Modal, FlatList, } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  Alert,
+  Modal,
+  FlatList,
+} from "react-native";
 import { useAuth } from "../contexts/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -9,7 +19,12 @@ const PerfilScreen = () => {
   const [saldosMensais, setSaldosMensais] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [editandoPerfil, setEditandoPerfil] = useState(false);
-  const [perfilUsuario, setPerfilUsuario] = useState({nome: "", telefone: "", dataNascimento: "", profissao: "",});
+  const [perfilUsuario, setPerfilUsuario] = useState({
+    nome: "",
+    telefone: "",
+    dataNascimento: "",
+    profissao: "",
+  });
 
   // Carregar dados salvos ao inicializar
   useEffect(() => {
@@ -155,6 +170,65 @@ const PerfilScreen = () => {
     </View>
   );
 
+  // Função para formatar telefone
+  const formatarTelefone = (text) => {
+    const apenasNumeros = text.replace(/\D/g, "");
+
+    let formatado = "";
+    if (apenasNumeros.length > 0) {
+      formatado = `(${apenasNumeros.substring(0, 2)}`;
+    }
+    if (apenasNumeros.length > 2) {
+      formatado += `) ${apenasNumeros.substring(2, 7)}`;
+    }
+    if (apenasNumeros.length > 7) {
+      formatado += `-${apenasNumeros.substring(7, 11)}`;
+    }
+
+    return formatado;
+  };
+
+  // Função para formatar data
+  const formatarData = (text) => {
+    const apenasNumeros = text.replace(/\D/g, "");
+
+    let formatado = "";
+    if (apenasNumeros.length > 0) {
+      let dia = apenasNumeros.substring(0, 2);
+      if (dia.length === 2) {
+        const diaNum = parseInt(dia);
+        if (diaNum < 1 || diaNum > 31) {
+          dia = "31";
+        }
+      }
+      formatado = dia;
+    }
+    if (apenasNumeros.length > 2) {
+      let mes = apenasNumeros.substring(2, 4);
+      if (mes.length === 2) {
+        const mesNum = parseInt(mes);
+        if (mesNum < 1 || mesNum > 12) {
+          mes = "12";
+        }
+      }
+      formatado += `/${mes}`;
+    }
+    if (apenasNumeros.length > 4) {
+      let ano = apenasNumeros.substring(4, 8);
+      if (ano.length >= 4) {
+        const anoNum = parseInt(ano);
+        const anoAtual = new Date().getFullYear();
+        if (anoNum < 1900 || anoNum > anoAtual) {
+          ano = anoAtual.toString();
+        }
+        ano = ano.substring(0, 4);
+      }
+      formatado += `/${ano}`;
+    }
+
+    return formatado;
+  };
+
   return (
     <ScrollView style={styles.container}>
       {/* Cabeçalho do Perfil */}
@@ -210,7 +284,10 @@ const PerfilScreen = () => {
               placeholderTextColor="#8B8B8B"
               value={perfilUsuario.telefone}
               onChangeText={(text) =>
-                setPerfilUsuario({ ...perfilUsuario, telefone: text })
+                setPerfilUsuario({
+                  ...perfilUsuario,
+                  telefone: formatarTelefone(text),
+                })
               }
               keyboardType="phone-pad"
             />
@@ -220,7 +297,10 @@ const PerfilScreen = () => {
               placeholderTextColor="#8B8B8B"
               value={perfilUsuario.dataNascimento}
               onChangeText={(text) =>
-                setPerfilUsuario({ ...perfilUsuario, dataNascimento: text })
+                setPerfilUsuario({
+                  ...perfilUsuario,
+                  dataNascimento: formatarData(text),
+                })
               }
             />
             <TextInput

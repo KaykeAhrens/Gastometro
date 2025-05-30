@@ -206,13 +206,13 @@ const AdicionarGastoScreen = ({ navigation }) => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.dateModalContainer}>
-            <View style={styles.modalHeader}>
+            <View style={styles.headerModal}>
               <TouchableOpacity onPress={handleCancelarData}>
-                <Text style={styles.modalCancelText}>Cancelar</Text>
+                <Text style={styles.textoModalCancelar}>Cancelar</Text>
               </TouchableOpacity>
-              <Text style={styles.modalTitle}>Selecionar Data</Text>
+              <Text style={styles.tituloModal}>Selecionar Data</Text>
               <TouchableOpacity onPress={handleConfirmarData}>
-                <Text style={styles.modalConfirmText}>OK</Text>
+                <Text style={styles.textoModalConfirmar}>OK</Text>
               </TouchableOpacity>
             </View>
 
@@ -225,17 +225,17 @@ const AdicionarGastoScreen = ({ navigation }) => {
                     <TouchableOpacity
                       key={ano}
                       style={[
-                        styles.dateOption,
+                        styles.opcaoData,
                         tempDate.getFullYear() === ano &&
-                          styles.dateOptionSelected,
+                          styles.opcaoDataSelecionada,
                       ]}
                       onPress={() => alterarAno(ano)}
                     >
                       <Text
                         style={[
-                          styles.dateOptionText,
+                          styles.textoOpcaoData,
                           tempDate.getFullYear() === ano &&
-                            styles.dateOptionTextSelected,
+                            styles.textoOpcaoSelecionada,
                         ]}
                       >
                         {ano}
@@ -253,17 +253,17 @@ const AdicionarGastoScreen = ({ navigation }) => {
                     <TouchableOpacity
                       key={mes.valor}
                       style={[
-                        styles.dateOption,
+                        styles.opcaoData,
                         tempDate.getMonth() === mes.valor &&
-                          styles.dateOptionSelected,
+                          styles.opcaoDataSelecionada,
                       ]}
                       onPress={() => alterarMes(mes.valor)}
                     >
                       <Text
                         style={[
-                          styles.dateOptionText,
+                          styles.textoOpcaoData,
                           tempDate.getMonth() === mes.valor &&
-                            styles.dateOptionTextSelected,
+                            styles.textoOpcaoSelecionada,
                         ]}
                       >
                         {mes.nome}
@@ -281,16 +281,17 @@ const AdicionarGastoScreen = ({ navigation }) => {
                     <TouchableOpacity
                       key={dia}
                       style={[
-                        styles.dateOption,
-                        tempDate.getDate() === dia && styles.dateOptionSelected,
+                        styles.opcaoData,
+                        tempDate.getDate() === dia &&
+                          styles.opcaoDataSelecionada,
                       ]}
                       onPress={() => alterarDia(dia)}
                     >
                       <Text
                         style={[
-                          styles.dateOptionText,
+                          styles.textoOpcaoData,
                           tempDate.getDate() === dia &&
-                            styles.dateOptionTextSelected,
+                            styles.textoOpcaoSelecionada,
                         ]}
                       >
                         {dia}
@@ -301,8 +302,8 @@ const AdicionarGastoScreen = ({ navigation }) => {
               </View>
             </View>
 
-            <View style={styles.datePreview}>
-              <Text style={styles.datePreviewText}>
+            <View style={styles.dataPrevista}>
+              <Text style={styles.textoDataPrevista}>
                 Data selecionada: {formatarData(tempDate)}
               </Text>
             </View>
@@ -319,8 +320,8 @@ const AdicionarGastoScreen = ({ navigation }) => {
       onPress={() => handleSelectCategoria(cat)}
     >
       <View style={styles.categoriaOptionContent}>
-        <View style={styles.categoriaIconContainer}>
-          <Text style={styles.categoriaIcon}>{cat.icone}</Text>
+        <View style={styles.categoriaIconeContainer}>
+          <Text style={styles.categoriaIcone}>{cat.icone}</Text>
         </View>
         <View style={styles.categoriaInfo}>
           <Text style={styles.categoriaNome}>{cat.nome}</Text>
@@ -410,39 +411,39 @@ const AdicionarGastoScreen = ({ navigation }) => {
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Categoria</Text>
           <TouchableOpacity
-            style={[styles.input, styles.categoriaSelector]}
+            style={[styles.input, styles.categoriaSelecao]}
             onPress={() => setModalVisible(true)}
           >
             <Text
               style={[
-                styles.categoriaText,
-                !categoria && styles.placeholderText,
+                styles.textoCategoria,
+                !categoria && styles.textoPlaceholder,
               ]}
             >
               {categoria || "Selecionar categoria"}
             </Text>
-            <Text style={styles.selectorArrow}>›</Text>
+            <Text style={styles.setaSelecao}>›</Text>
           </TouchableOpacity>
           {categoria && (
             <TouchableOpacity
-              style={styles.clearCategoriaButton}
+              style={styles.limparCategoriaBotao}
               onPress={() => setCategoria("")}
             >
-              <Text style={styles.clearCategoriaText}>Limpar seleção</Text>
+              <Text style={styles.limparCategoriaTexto}>Limpar seleção</Text>
             </TouchableOpacity>
           )}
         </View>
 
         {/* Botão Criar */}
         <TouchableOpacity
-          style={[styles.createButton, loading && styles.createButtonDisabled]}
+          style={[styles.botaoCriar, loading && styles.botaoCriarDesabilitado]}
           onPress={handleCriarGasto}
           disabled={loading}
         >
           {loading ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text style={styles.createButtonText}>Criar Gasto</Text>
+            <Text style={styles.textoBotaoCriar}>Criar Gasto</Text>
           )}
         </TouchableOpacity>
 
@@ -461,17 +462,17 @@ const AdicionarGastoScreen = ({ navigation }) => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Selecionar Categoria</Text>
+            <View style={styles.headerModal}>
+              <Text style={styles.tituloModal}>Selecionar Categoria</Text>
               <TouchableOpacity
-                style={styles.modalCloseButton}
+                style={styles.botaoFecharModal}
                 onPress={() => setModalVisible(false)}
               >
-                <Text style={styles.modalCloseText}>×</Text>
+                <Text style={styles.textoBotaoFecharModal}>×</Text>
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modalContent}>
+            <ScrollView style={styles.modalConteudo}>
               {/* Opção "Outros" */}
               <TouchableOpacity
                 style={[styles.categoriaOption, { borderLeftColor: "#666" }]}
@@ -484,8 +485,8 @@ const AdicionarGastoScreen = ({ navigation }) => {
                 }
               >
                 <View style={styles.categoriaOptionContent}>
-                  <View style={styles.categoriaIconContainer}>
-                    <Text style={styles.categoriaIcon}>📂</Text>
+                  <View style={styles.categoriaIconeContainer}>
+                    <Text style={styles.categoriaIcone}>📂</Text>
                   </View>
                   <View style={styles.categoriaInfo}>
                     <Text style={styles.categoriaNome}>Outros</Text>
@@ -500,18 +501,18 @@ const AdicionarGastoScreen = ({ navigation }) => {
               {categorias.map(renderCategoriaItem)}
 
               {categorias.length === 0 && (
-                <View style={styles.emptyCategorias}>
-                  <Text style={styles.emptyCategoriaText}>
+                <View style={styles.categoriaVazia}>
+                  <Text style={styles.textoCategoriaVazia}>
                     Nenhuma categoria criada
                   </Text>
                   <TouchableOpacity
-                    style={styles.createCategoriaButton}
+                    style={styles.botaoAdicionarCategoria}
                     onPress={() => {
                       setModalVisible(false);
                       navigation.navigate("Categorias");
                     }}
                   >
-                    <Text style={styles.createCategoriaText}>
+                    <Text style={styles.textoAdicionarCategoria}>
                       Criar primeira categoria
                     </Text>
                   </TouchableOpacity>
@@ -620,81 +621,81 @@ const styles = StyleSheet.create({
   dateScroll: {
     flex: 1,
   },
-  dateOption: {
+  opcaoData: {
     paddingVertical: 12,
     paddingHorizontal: 8,
     alignItems: "center",
   },
-  dateOptionSelected: {
+  opcaoDataSelecionada: {
     backgroundColor: "#4D8FAC",
     borderRadius: 6,
     marginVertical: 2,
   },
-  dateOptionText: {
+  textoOpcaoData: {
     color: "#CCCCCC",
     fontSize: 14,
   },
-  dateOptionTextSelected: {
+  textoOpcaoSelecionada: {
     color: "white",
     fontWeight: "600",
   },
-  datePreview: {
+  dataPrevista: {
     padding: 15,
     borderTopWidth: 1,
     borderTopColor: "#3A3A4C",
     alignItems: "center",
   },
-  datePreviewText: {
+  textoDataPrevista: {
     color: "#4D8FAC",
     fontSize: 16,
     fontWeight: "600",
   },
-  modalCancelText: {
+  textoModalCancelar: {
     color: "#E74C3C",
     fontSize: 16,
     fontWeight: "600",
   },
-  modalConfirmText: {
+  textoModalConfirmar: {
     color: "#4D8FAC",
     fontSize: 16,
     fontWeight: "600",
   },
 
-  categoriaSelector: {
+  categoriaSelecao: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  categoriaText: {
+  textoCategoria: {
     color: "white",
     fontSize: 16,
   },
-  placeholderText: {
+  textoPlaceholder: {
     color: "#666",
   },
-  selectorArrow: {
+  setaSelecao: {
     color: "#4D8FAC",
     fontSize: 20,
     fontWeight: "bold",
   },
-  clearCategoriaButton: {
+  limparCategoriaBotao: {
     marginTop: 8,
   },
-  clearCategoriaText: {
+  limparCategoriaTexto: {
     color: "#E74C3C",
     fontSize: 14,
   },
-  createButton: {
+  botaoCriar: {
     backgroundColor: "#4D8FAC",
     borderRadius: 12,
     padding: 18,
     alignItems: "center",
     marginTop: 30,
   },
-  createButtonDisabled: {
+  botaoCriarDesabilitado: {
     backgroundColor: "#3A3A4C",
   },
-  createButtonText: {
+  textoBotaoCriar: {
     color: "white",
     fontSize: 16,
     fontWeight: "600",
@@ -711,7 +712,7 @@ const styles = StyleSheet.create({
     width: "90%",
     maxHeight: "70%",
   },
-  modalHeader: {
+  headerModal: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -719,34 +720,34 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#3A3A4C",
   },
-  modalTitle: {
+  tituloModal: {
     color: "white",
     fontSize: 18,
     fontWeight: "bold",
   },
-  modalCloseButton: {
+  botaoFecharModal: {
     padding: 5,
   },
-  modalCloseText: {
+  textoBotaoFecharModal: {
     color: "#4D8FAC",
     fontSize: 24,
     fontWeight: "bold",
   },
-  modalContent: {
+  modalConteudo: {
     padding: 20,
   },
-  categoriaOption: {
+  /*categoriaOpcao: {
     backgroundColor: "#3A3A4C",
     borderRadius: 8,
     marginBottom: 10,
     borderLeftWidth: 4,
   },
-  categoriaOptionContent: {
+  categoriaOpcaoConteudo: {
     flexDirection: "row",
     alignItems: "center",
     padding: 15,
-  },
-  categoriaIconContainer: {
+  },*/
+  categoriaIconeContainer: {
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -755,7 +756,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 12,
   },
-  categoriaIcon: {
+  categoriaIcone: {
     fontSize: 18,
   },
   categoriaInfo: {
@@ -771,23 +772,23 @@ const styles = StyleSheet.create({
     color: "#CCCCCC",
     fontSize: 12,
   },
-  emptyCategorias: {
+  categoriaVazia: {
     alignItems: "center",
     paddingVertical: 30,
   },
-  emptyCategoriaText: {
+  textoCategoriaVazia: {
     color: "#CCCCCC",
     fontSize: 16,
     marginBottom: 15,
     textAlign: "center",
   },
-  createCategoriaButton: {
+  botaoAdicionarCategoria: {
     backgroundColor: "#4D8FAC",
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
   },
-  createCategoriaText: {
+  textoAdicionarCategoria: {
     color: "white",
     fontSize: 14,
     fontWeight: "600",
