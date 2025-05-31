@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   SafeAreaView,
   StatusBar,
@@ -21,7 +20,10 @@ import {
   doc,
   getDocs,
 } from "firebase/firestore";
-import Icon from "react-native-vector-icons/MaterialIcons";
+
+// Importando os componentes
+import BotaoSimples from "../components/BotaoSimples";
+import ItemGasto from "../components/ItemGasto";
 
 const HomeScreen = ({ navigation }) => {
   const { currentUser } = useAuth();
@@ -110,7 +112,7 @@ const HomeScreen = ({ navigation }) => {
   };
 
   // Função para obter o ícone da categoria
-  const getCategoryIcon = (nomeCategoria) => {
+  const obterIconeCategoria = (nomeCategoria) => {
     if (!nomeCategoria) return "folder"; // Ícone padrão para "Outros"
 
     const categoria = categorias.find((cat) => cat.nome === nomeCategoria);
@@ -118,7 +120,7 @@ const HomeScreen = ({ navigation }) => {
   };
 
   // Função para obter a cor da categoria
-  const getCategoryColor = (nomeCategoria) => {
+  const obterCorCategoria = (nomeCategoria) => {
     if (!nomeCategoria) return "#666"; // Cor padrão para "Outros"
 
     const categoria = categorias.find((cat) => cat.nome === nomeCategoria);
@@ -240,38 +242,23 @@ const HomeScreen = ({ navigation }) => {
     ]);
   };
 
+  const handleEditGasto = (gasto) => {
+    navigation.navigate("EditarGasto", { gasto });
+  };
+
   const formatCurrency = (value) => {
     if (typeof value !== "number") return "R$ 0,00";
     return `R$ ${value.toFixed(2).replace(".", ",")}`;
   };
 
   const renderGastoItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.gastoItem}
-      onPress={() => navigation.navigate("EditarGasto", { gasto: item })}
-      onLongPress={() => handleDeleteGasto(item.id)}
-    >
-      <View
-        style={[
-          styles.gastoIcon,
-          { backgroundColor: getCategoryColor(item.categoria) },
-        ]}
-      >
-        <Icon name={getCategoryIcon(item.categoria)} size={20} color="white" />
-      </View>
-      <View style={styles.gastoInfo}>
-        <Text style={styles.gastoTitle}>{item.titulo || "Sem título"}</Text>
-        {item.descricao ? (
-          <Text style={styles.gastoDescription}>{item.descricao}</Text>
-        ) : null}
-        {item.categoria && (
-          <Text style={styles.gastoCategory}>{item.categoria}</Text>
-        )}
-      </View>
-      <View style={styles.gastoValue}>
-        <Text style={styles.gastoValueText}>{formatCurrency(item.valor)}</Text>
-      </View>
-    </TouchableOpacity>
+    <ItemGasto
+      gasto={item}
+      aoPressionar={handleEditGasto}
+      aoPressionarLongo={handleDeleteGasto}
+      obterIconeCategoria={obterIconeCategoria}
+      obterCorCategoria={obterCorCategoria}
+    />
   );
 
   return (
@@ -281,12 +268,13 @@ const HomeScreen = ({ navigation }) => {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.logoContainer}>
-          {/* <View style={styles.logo} /> */}
           <Text style={styles.textoHeader}>Início</Text>
         </View>
-        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-          <Text style={styles.logoutText}>Sair</Text>
-        </TouchableOpacity>
+        <BotaoSimples
+          titulo="Sair"
+          aoPressionar={handleLogout}
+          corTexto="#4D8FAC"
+        />
       </View>
 
       {/* Saldo Atual */}
@@ -297,20 +285,13 @@ const HomeScreen = ({ navigation }) => {
 
       {/* Gastos Mensais */}
       <View style={styles.gastosSection}>
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
+        <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Gastos ({gastos.length})</Text>
-          <TouchableOpacity
-            style={styles.botaoAdicionar}
-            onPress={() => navigation.navigate("AdicionarGasto")}
-          >
-            <Text style={styles.textoBotaoAdicionarGasto}>+</Text>
-          </TouchableOpacity>
+          <BotaoSimples
+            titulo="+ Adicionar"
+            aoPressionar={() => navigation.navigate("AdicionarGasto")}
+            corTexto="white"
+          />
         </View>
 
         {loading ? (
@@ -328,7 +309,7 @@ const HomeScreen = ({ navigation }) => {
               <View style={styles.containerVazio}>
                 <Text style={styles.textoVazio}>Nenhum gasto cadastrado</Text>
                 <Text style={styles.assuntoVazio}>
-                  Toque no botão + para adicionar seu primeiro gasto
+                  Toque no botão "Adicionar" para criar seu primeiro gasto
                 </Text>
               </View>
             }
@@ -360,16 +341,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
   },
-  logoutButton: {
-    backgroundColor: "#2A2A3C",
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  logoutText: {
-    color: "#4D8FAC",
-    fontSize: 14,
-  },
   saldoContainer: {
     backgroundColor: "#2A2A3C",
     marginHorizontal: 20,
@@ -393,14 +364,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginTop: 10,
   },
-  listaGastos: {
-    marginBottom: 30,
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 15,
   },
   sectionTitle: {
     color: "white",
     fontSize: 18,
     fontWeight: "600",
-    marginBottom: 15,
+  },
+  listaGastos: {
+    marginBottom: 30,
   },
   loadingContainer: {
     alignItems: "center",
@@ -409,53 +385,6 @@ const styles = StyleSheet.create({
   loadingText: {
     color: "#CCCCCC",
     fontSize: 16,
-  },
-  gastoItem: {
-    backgroundColor: "#2A2A3C",
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 10,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  gastoIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 15,
-  },
-  gastoIconText: {
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  gastoInfo: {
-    flex: 1,
-  },
-  gastoTitle: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-  gastoDescription: {
-    color: "#CCCCCC",
-    fontSize: 14,
-    marginBottom: 2,
-  },
-  gastoCategory: {
-    color: "#4D8FAC",
-    fontSize: 12,
-    fontStyle: "italic",
-  },
-  gastoValue: {
-    alignItems: "flex-end",
-  },
-  gastoValueText: {
-    color: "#4D8FAC",
-    fontSize: 16,
-    fontWeight: "600",
   },
   containerVazio: {
     alignItems: "center",
@@ -471,26 +400,6 @@ const styles = StyleSheet.create({
     color: "#888",
     textAlign: "center",
     fontSize: 14,
-  },
-  botaoAdicionar: {
-    right: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    margin: 5,
-  },
-  textoBotaoAdicionarGasto: {
-    color: "white",
-    fontSize: 28,
-    fontWeight: "bold",
-  },
-  navItem: {
-    padding: 10,
-  },
-  navIcon: {
-    width: 24,
-    height: 24,
-    backgroundColor: "#666",
-    borderRadius: 4,
   },
 });
 

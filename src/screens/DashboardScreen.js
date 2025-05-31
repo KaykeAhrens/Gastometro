@@ -13,6 +13,8 @@ import { useAuth } from "../contexts/AuthContext";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../services/firebase";
 import { useFocusEffect } from "@react-navigation/native";
+import GraficoBarras from "../components/GraficoBarras";
+import BotaoAcao from "../components/BotaoAcao";
 
 const { width } = Dimensions.get("window");
 
@@ -218,79 +220,48 @@ const DashboardScreen = ({ navigation }) => {
     0
   );
 
-  // Componente do gráfico de barras simples
-  const GraficoBarras = ({ dados }) => {
-    if (dados.length === 0) return null;
-
-    const valorMaximo = Math.max(...dados.map((d) => d.valor));
-
-    return (
-      <View style={styles.graficoContainer}>
-        <Text style={styles.graficoTitulo}>Gastos por Mês</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={styles.graficoBarras}>
-            {dados.map((item, index) => {
-              const altura = (item.valor / valorMaximo) * 120;
-              return (
-                <View key={index} style={styles.barraContainer}>
-                  <View
-                    style={[styles.barra, { height: Math.max(altura, 5) }]}
-                  />
-                  <Text style={styles.barraLabel}>{item.mes}</Text>
-                  <Text style={styles.barraValor}>
-                    {formatCurrency(item.valor)}
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
-        </ScrollView>
-      </View>
-    );
-  };
-
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={estilos.container}>
         <StatusBar barStyle="light-content" backgroundColor="#1E1E2E" />
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Carregando dados...</Text>
+        <View style={estilos.loadingContainer}>
+          <Text style={estilos.loadingText}>Carregando dados...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={estilos.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1E1E2E" />
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={estilos.header}>
         <View>
-          <Text style={styles.headerTitle}>Dashboard</Text>
+          <Text style={estilos.headerTitle}>Relatório</Text>
         </View>
-        <TouchableOpacity style={styles.refreshButton} onPress={refreshManual}>
-          <Text style={styles.refreshText}>↻</Text>
+        <TouchableOpacity style={estilos.refreshButton} onPress={refreshManual}>
+          <Text style={estilos.refreshText}>↻</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollContainer}>
+      <ScrollView style={estilos.scrollContainer}>
         {/* Gráfico de Gastos por Mês */}
         <GraficoBarras dados={gastosPorMes} />
 
         {/* Maiores e Menores Gastos */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Resumo dos Gastos</Text>
-          <View style={styles.resumoContainer}>
-            <View style={styles.resumoItem}>
-              <Text style={styles.resumoLabel}>Maior Gasto</Text>
-              <Text style={[styles.resumoValor, { color: "#E74C3C" }]}>
+        <View style={estilos.section}>
+          <Text style={estilos.sectionTitle}>Resumo dos Gastos</Text>
+          <View style={estilos.resumoContainer}>
+            <View style={estilos.resumoItem}>
+              <Text style={estilos.resumoLabel}>Maior Gasto</Text>
+              <Text style={[estilos.resumoValor, { color: "#E74C3C" }]}>
                 {formatCurrency(estatisticas.maiorGasto)}
               </Text>
             </View>
-            <View style={styles.resumoItem}>
-              <Text style={styles.resumoLabel}>Menor Gasto</Text>
-              <Text style={[styles.resumoValor, { color: "#27AE60" }]}>
+            <View style={estilos.resumoItem}>
+              <Text style={estilos.resumoLabel}>Menor Gasto</Text>
+              <Text style={[estilos.resumoValor, { color: "#27AE60" }]}>
                 {formatCurrency(estatisticas.menorGasto)}
               </Text>
             </View>
@@ -298,25 +269,25 @@ const DashboardScreen = ({ navigation }) => {
         </View>
 
         {/* Top 5 Gastos */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Top 5 Maiores Gastos</Text>
+        <View style={estilos.section}>
+          <Text style={estilos.sectionTitle}>Top 5 Maiores Gastos</Text>
           {topGastos.map((gasto, index) => (
-            <View key={gasto.id} style={styles.topGastoItem}>
-              <View style={styles.topGastoRank}>
-                <Text style={styles.topGastoRankText}>{index + 1}</Text>
+            <View key={gasto.id} style={estilos.topGastoItem}>
+              <View style={estilos.topGastoRank}>
+                <Text style={estilos.topGastoRankText}>{index + 1}</Text>
               </View>
-              <View style={styles.topGastoInfo}>
-                <Text style={styles.topGastoTitulo}>{gasto.titulo}</Text>
+              <View style={estilos.topGastoInfo}>
+                <Text style={estilos.topGastoTitulo}>{gasto.titulo}</Text>
                 {gasto.descricao && (
-                  <Text style={styles.topGastoDescricao}>
+                  <Text style={estilos.topGastoDescricao}>
                     {gasto.descricao}
                   </Text>
                 )}
-                <Text style={styles.topGastoData}>
+                <Text style={estilos.topGastoData}>
                   {gasto.createdAt.toLocaleDateString("pt-BR")}
                 </Text>
               </View>
-              <Text style={styles.topGastoValor}>
+              <Text style={estilos.topGastoValor}>
                 {formatCurrency(gasto.valor)}
               </Text>
             </View>
@@ -324,27 +295,27 @@ const DashboardScreen = ({ navigation }) => {
         </View>
 
         {/* Insights */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>💡 Insights</Text>
-          <View style={styles.insightContainer}>
+        <View style={estilos.section}>
+          <Text style={estilos.sectionTitle}>💡 Insights</Text>
+          <View style={estilos.insightContainer}>
             {gastosDoMesAtual.length > 0 && (
-              <Text style={styles.insightText}>
+              <Text style={estilos.insightText}>
                 • Você já gastou {formatCurrency(totalMesAtual)} este mês
               </Text>
             )}
             {estatisticas.totalItens > 0 && (
-              <Text style={styles.insightText}>
+              <Text style={estilos.insightText}>
                 • Sua média de gastos é de{" "}
                 {formatCurrency(estatisticas.gastoMedio)} por item
               </Text>
             )}
             {gastosPorMes.length > 1 && (
-              <Text style={styles.insightText}>
+              <Text style={estilos.insightText}>
                 • Você tem dados de {gastosPorMes.length} meses diferentes
               </Text>
             )}
             {estatisticas.maiorGasto > estatisticas.gastoMedio * 3 && (
-              <Text style={styles.insightText}>
+              <Text style={estilos.insightText}>
                 • Seu maior gasto foi{" "}
                 {Math.round(estatisticas.maiorGasto / estatisticas.gastoMedio)}x
                 maior que a média
@@ -354,12 +325,11 @@ const DashboardScreen = ({ navigation }) => {
         </View>
 
         {/* Botão para ver todos os gastos */}
-        <TouchableOpacity
-          style={styles.verTodosButton}
-          onPress={() => navigation.navigate("Home")}
-        >
-          <Text style={styles.verTodosText}>Ver Todos os Gastos</Text>
-        </TouchableOpacity>
+        <BotaoAcao
+          titulo="Ver Todos os Gastos"
+          aoPressionar={() => navigation.navigate("Home")}
+          estilo={estilos.verTodosButton}
+        />
 
         <View style={{ height: 100 }} />
       </ScrollView>
@@ -367,7 +337,7 @@ const DashboardScreen = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const estilos = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#1E1E2E",
@@ -411,75 +381,6 @@ const styles = StyleSheet.create({
   loadingText: {
     color: "#CCCCCC",
     fontSize: 16,
-  },
-  statsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    padding: 15,
-    gap: 10,
-  },
-  statCard: {
-    backgroundColor: "#2A2A3C",
-    borderRadius: 12,
-    padding: 15,
-    width: (width - 50) / 2,
-    alignItems: "center",
-  },
-  statCardPrimary: {
-    backgroundColor: "#4D8FAC",
-  },
-  statTitle: {
-    color: "#CCCCCC",
-    fontSize: 12,
-    marginBottom: 5,
-    textAlign: "center",
-  },
-  statValue: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  graficoContainer: {
-    backgroundColor: "#2A2A3C",
-    margin: 15,
-    padding: 20,
-    borderRadius: 12,
-  },
-  graficoTitulo: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 15,
-  },
-  graficoBarras: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    height: 160,
-    paddingBottom: 40,
-  },
-  barraContainer: {
-    alignItems: "center",
-    marginRight: 15,
-    minWidth: 60,
-  },
-  barra: {
-    backgroundColor: "#4D8FAC",
-    width: 30,
-    borderRadius: 4,
-    marginBottom: 8,
-  },
-  barraLabel: {
-    color: "#CCCCCC",
-    fontSize: 10,
-    textAlign: "center",
-    marginBottom: 2,
-  },
-  barraValor: {
-    color: "white",
-    fontSize: 9,
-    textAlign: "center",
-    fontWeight: "bold",
   },
   section: {
     backgroundColor: "#2A2A3C",
@@ -567,16 +468,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   verTodosButton: {
-    backgroundColor: "#4D8FAC",
     marginHorizontal: 15,
-    padding: 15,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  verTodosText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
   },
 });
 

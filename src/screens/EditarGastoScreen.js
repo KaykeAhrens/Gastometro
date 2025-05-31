@@ -2,15 +2,12 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
   SafeAreaView,
   StatusBar,
   Alert,
-  ActivityIndicator,
   ScrollView,
-  Modal,
+  TouchableOpacity,
+  StyleSheet,
 } from "react-native";
 import { useAuth } from "../contexts/AuthContext";
 import {
@@ -25,6 +22,11 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { db } from "../services/firebase";
+import Icon from "react-native-vector-icons/MaterialIcons";
+import ModalSelecaoCategoria from "../components/ModalSelecaoCategoria";
+import BotaoAcao from "../components/BotaoAcao";
+import CampoInput from "../components/CampoInput";
+import ModalSelecaoData from "../components/ModalSelecaoData";
 
 const EditarGastoScreen = ({ navigation, route }) => {
   const { gasto } = route.params;
@@ -39,9 +41,7 @@ const EditarGastoScreen = ({ navigation, route }) => {
   const [loading, setLoading] = useState(false);
   const [modalCategoriaVisible, setModalCategoriaVisible] = useState(false);
 
-  // Estados para data
   const [dataGasto, setDataGasto] = useState(() => {
-    // Inicializar com a data do gasto existente ou data atual
     if (gasto.createdAt && gasto.createdAt.toDate) {
       return gasto.createdAt.toDate();
     } else if (gasto.createdAt && gasto.createdAt.seconds) {
@@ -52,7 +52,6 @@ const EditarGastoScreen = ({ navigation, route }) => {
   const [modalDataVisible, setModalDataVisible] = useState(false);
   const [tempDate, setTempDate] = useState(new Date());
 
-  // Buscar categorias e definir categoria atual
   useEffect(() => {
     if (currentUser) {
       fetchCategorias();
@@ -74,7 +73,6 @@ const EditarGastoScreen = ({ navigation, route }) => {
 
       setCategorias(categoriasData);
 
-      // Definir categoria atual baseada no gasto
       if (gasto.categoriaId) {
         const categoriaAtual = categoriasData.find(
           (cat) => cat.id === gasto.categoriaId
@@ -96,23 +94,12 @@ const EditarGastoScreen = ({ navigation, route }) => {
   };
 
   const handleSalvarGasto = async () => {
-    console.log("Iniciando atualização de gasto...");
-    console.log("Dados:", {
-      titulo,
-      descricao,
-      valor,
-      categoria: categoriaSelecionada?.nome,
-      dataGasto,
-      gastoId: gasto.id,
-    });
-
     if (!titulo.trim() || !valor.trim()) {
       Alert.alert("Erro", "Por favor, preencha pelo menos o título e o valor");
       return;
     }
 
     const valorNumerico = parseFloat(valor.replace(",", "."));
-    console.log("Valor numérico:", valorNumerico);
 
     if (isNaN(valorNumerico) || valorNumerico <= 0) {
       Alert.alert("Erro", "Por favor, insira um valor válido");
@@ -121,24 +108,18 @@ const EditarGastoScreen = ({ navigation, route }) => {
 
     setLoading(true);
     try {
-      console.log("Atualizando no Firebase...");
       await updateDoc(doc(db, "gastos", gasto.id), {
         titulo: titulo.trim(),
         descricao: descricao.trim() || "",
         valor: valorNumerico,
         categoria: categoriaSelecionada?.nome || "Outros",
         categoriaId: categoriaSelecionada?.id || null,
-        createdAt: Timestamp.fromDate(dataGasto), // Atualizando a data
+        createdAt: Timestamp.fromDate(dataGasto),
         updatedAt: serverTimestamp(),
       });
 
-      console.log("Documento atualizado com sucesso");
-
-      // Navegar automaticamente de volta
-      console.log("Navegando de volta automaticamente...");
       navigation.goBack();
     } catch (error) {
-      console.error("Erro ao atualizar gasto:", error);
       Alert.alert("Erro", `Erro ao atualizar gasto: ${error.message}`);
     } finally {
       setLoading(false);
@@ -148,26 +129,17 @@ const EditarGastoScreen = ({ navigation, route }) => {
   const handleExcluirGasto = async () => {
     setLoading(true);
     try {
-      console.log("Excluindo gasto do Firebase...");
       await deleteDoc(doc(db, "gastos", gasto.id));
-
-      console.log("Gasto excluído com sucesso");
       Alert.alert("Sucesso", "Gasto excluído com sucesso!");
-
-      // Navegar de volta automaticamente
       navigation.goBack();
     } catch (error) {
-      console.error("Erro ao excluir gasto:", error);
       Alert.alert("Erro", `Erro ao excluir gasto: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // Funções para o seletor de data
-  const formatarData = (data) => {
-    return data.toLocaleDateString("pt-BR");
-  };
+  const formatarData = (data) => data.toLocaleDateString("pt-BR");
 
   const handleConfirmarData = () => {
     setDataGasto(tempDate);
@@ -179,414 +151,142 @@ const EditarGastoScreen = ({ navigation, route }) => {
     setModalDataVisible(false);
   };
 
-  // Componente DatePicker
-  const DatePickerModal = () => {
-    const anos = [];
-    const anoAtual = new Date().getFullYear();
-    for (let i = anoAtual; i >= anoAtual - 5; i--) {
-      anos.push(i);
-    }
-
-    const meses = [
-      { nome: "Janeiro", valor: 0 },
-      { nome: "Fevereiro", valor: 1 },
-      { nome: "Março", valor: 2 },
-      { nome: "Abril", valor: 3 },
-      { nome: "Maio", valor: 4 },
-      { nome: "Junho", valor: 5 },
-      { nome: "Julho", valor: 6 },
-      { nome: "Agosto", valor: 7 },
-      { nome: "Setembro", valor: 8 },
-      { nome: "Outubro", valor: 9 },
-      { nome: "Novembro", valor: 10 },
-      { nome: "Dezembro", valor: 11 },
-    ];
-
-    const obterDiasDoMes = (ano, mes) => {
-      const diasNoMes = new Date(ano, mes + 1, 0).getDate();
-      const dias = [];
-      for (let i = 1; i <= diasNoMes; i++) {
-        dias.push(i);
-      }
-      return dias;
-    };
-
-    const dias = obterDiasDoMes(tempDate.getFullYear(), tempDate.getMonth());
-
-    const alterarAno = (ano) => {
-      const novaData = new Date(tempDate);
-      novaData.setFullYear(ano);
-      setTempDate(novaData);
-    };
-
-    const alterarMes = (mes) => {
-      const novaData = new Date(tempDate);
-      novaData.setMonth(mes);
-      setTempDate(novaData);
-    };
-
-    const alterarDia = (dia) => {
-      const novaData = new Date(tempDate);
-      novaData.setDate(dia);
-      setTempDate(novaData);
-    };
-
-    return (
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalDataVisible}
-        onRequestClose={handleCancelarData}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.dateModalContainer}>
-            <View style={styles.modalHeader}>
-              <TouchableOpacity onPress={handleCancelarData}>
-                <Text style={styles.modalCancelText}>Cancelar</Text>
-              </TouchableOpacity>
-              <Text style={styles.modalTitle}>Selecionar Data</Text>
-              <TouchableOpacity onPress={handleConfirmarData}>
-                <Text style={styles.modalConfirmText}>OK</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.datePickerContainer}>
-              {/* Seletor de Ano */}
-              <View style={styles.dateColumn}>
-                <Text style={styles.dateColumnTitle}>Ano</Text>
-                <ScrollView style={styles.dateScroll}>
-                  {anos.map((ano) => (
-                    <TouchableOpacity
-                      key={ano}
-                      style={[
-                        styles.dateOption,
-                        tempDate.getFullYear() === ano &&
-                          styles.dateOptionSelected,
-                      ]}
-                      onPress={() => alterarAno(ano)}
-                    >
-                      <Text
-                        style={[
-                          styles.dateOptionText,
-                          tempDate.getFullYear() === ano &&
-                            styles.dateOptionTextSelected,
-                        ]}
-                      >
-                        {ano}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-
-              {/* Seletor de Mês */}
-              <View style={styles.dateColumn}>
-                <Text style={styles.dateColumnTitle}>Mês</Text>
-                <ScrollView style={styles.dateScroll}>
-                  {meses.map((mes) => (
-                    <TouchableOpacity
-                      key={mes.valor}
-                      style={[
-                        styles.dateOption,
-                        tempDate.getMonth() === mes.valor &&
-                          styles.dateOptionSelected,
-                      ]}
-                      onPress={() => alterarMes(mes.valor)}
-                    >
-                      <Text
-                        style={[
-                          styles.dateOptionText,
-                          tempDate.getMonth() === mes.valor &&
-                            styles.dateOptionTextSelected,
-                        ]}
-                      >
-                        {mes.nome}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-
-              {/* Seletor de Dia */}
-              <View style={styles.dateColumn}>
-                <Text style={styles.dateColumnTitle}>Dia</Text>
-                <ScrollView style={styles.dateScroll}>
-                  {dias.map((dia) => (
-                    <TouchableOpacity
-                      key={dia}
-                      style={[
-                        styles.dateOption,
-                        tempDate.getDate() === dia && styles.dateOptionSelected,
-                      ]}
-                      onPress={() => alterarDia(dia)}
-                    >
-                      <Text
-                        style={[
-                          styles.dateOptionText,
-                          tempDate.getDate() === dia &&
-                            styles.dateOptionTextSelected,
-                        ]}
-                      >
-                        {dia}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-            </View>
-
-            <View style={styles.datePreview}>
-              <Text style={styles.datePreviewText}>
-                Data selecionada: {formatarData(tempDate)}
-              </Text>
-            </View>
-          </View>
-        </View>
-      </Modal>
-    );
-  };
-
-  const renderCategoriaOption = (categoria) => (
-    <TouchableOpacity
-      key={categoria.id}
-      style={styles.categoriaOption}
-      onPress={() => {
-        setCategoriaSelecionada(categoria);
-        setModalCategoriaVisible(false);
-      }}
-    >
-      <View style={styles.categoriaIconContainer}>
-        <Text style={styles.categoriaIcon}>{categoria.icone}</Text>
-      </View>
-      <View style={styles.categoriaInfo}>
-        <Text style={styles.categoriaNome}>{categoria.nome}</Text>
-        <Text style={styles.categoriaOrcamento}>
-          Orçamento: R$ {categoria.orcamento.toFixed(2).replace(".", ",")}
-        </Text>
-      </View>
-      <View
-        style={[
-          styles.categoriaCorIndicator,
-          { backgroundColor: categoria.cor },
-        ]}
-      />
-    </TouchableOpacity>
-  );
-
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={estilos.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1E1E2E" />
 
-      {/* Header */}
-      <View style={styles.header}>
+      <View style={estilos.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>← Voltar</Text>
+          <Text style={estilos.backButton}>← Voltar</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Editar Gasto</Text>
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={handleExcluirGasto}
-          disabled={loading}
-        >
-          <Text style={styles.deleteButtonText}>🗑️</Text>
-        </TouchableOpacity>
+        <Text style={estilos.headerTitle}>Editar Gasto</Text>
+        <View style={{ width: 40 }} />
       </View>
 
       <ScrollView
-        style={styles.formContainer}
+        style={estilos.formContainer}
         showsVerticalScrollIndicator={false}
       >
-        {/* Campo Título */}
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Título *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Ex: McDonald's"
-            placeholderTextColor="#666"
-            value={titulo}
-            onChangeText={setTitulo}
-            maxLength={50}
-          />
-        </View>
+        <CampoInput
+          rotulo="Título *"
+          valor={titulo}
+          aoAlterarTexto={setTitulo}
+          placeholder="Ex: McDonald's"
+        />
 
-        {/* Campo Descrição */}
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Descrição</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="Ex: 2 combo Big Mac, grande + sundae de chocolate"
-            placeholderTextColor="#666"
-            value={descricao}
-            onChangeText={setDescricao}
-            multiline
-            numberOfLines={3}
-            maxLength={200}
-          />
-        </View>
+        <CampoInput
+          rotulo="Descrição"
+          valor={descricao}
+          aoAlterarTexto={setDescricao}
+          placeholder="Detalhes do gasto"
+          multiline
+        />
 
-        {/* Campo Valor */}
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Valor *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="0,00"
-            placeholderTextColor="#666"
-            value={valor}
-            onChangeText={setValor}
-            keyboardType="numeric"
-            maxLength={10}
-          />
-        </View>
+        <CampoInput
+          rotulo="Valor *"
+          valor={valor}
+          aoAlterarTexto={setValor}
+          placeholder="0,00"
+          keyboardType="numeric"
+        />
 
-        {/* Campo Data */}
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Data do Gasto</Text>
+        <View style={estilos.inputContainer}>
+          <Text style={estilos.inputLabel}>Data do Gasto</Text>
           <TouchableOpacity
-            style={[styles.input, styles.dateSelector]}
+            style={[estilos.input, estilos.dateSelector]}
             onPress={() => {
               setTempDate(dataGasto);
               setModalDataVisible(true);
             }}
           >
-            <Text style={styles.dateText}>{formatarData(dataGasto)}</Text>
-            <Text style={styles.selectorArrow}>📅</Text>
+            <Text style={estilos.dateText}>{formatarData(dataGasto)}</Text>
+            <Icon name="calendar-today" size={20} color="#4D8FAC" />
           </TouchableOpacity>
-          <Text style={styles.dateHint}>
-            Selecione a data em que o gasto foi realizado
-          </Text>
+          <Text style={estilos.dateHint}>Selecione a data do gasto</Text>
         </View>
 
-        {/* Seleção de Categoria */}
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Categoria</Text>
+        <View style={estilos.inputContainer}>
+          <Text style={estilos.inputLabel}>Categoria</Text>
           <TouchableOpacity
-            style={[styles.input, styles.categoriaSelector]}
+            style={[estilos.input, estilos.categoriaSelector]}
             onPress={() => setModalCategoriaVisible(true)}
           >
             {categoriaSelecionada ? (
-              <View style={styles.categoriaSelecionadaContainer}>
-                <Text style={styles.categoriaIconSelecionada}>
-                  {categoriaSelecionada.icone}
-                </Text>
-                <Text style={styles.categoriaNomeSelecionada}>
+              <View style={estilos.categoriaSelecionadaContainer}>
+                <View
+                  style={[
+                    estilos.categoriaIconSelecionada,
+                    { backgroundColor: categoriaSelecionada.cor + "20" },
+                  ]}
+                >
+                  <Icon
+                    name={categoriaSelecionada.icone}
+                    size={18}
+                    color={categoriaSelecionada.cor}
+                  />
+                </View>
+                <Text style={estilos.categoriaNomeSelecionada}>
                   {categoriaSelecionada.nome}
                 </Text>
                 <View
                   style={[
-                    styles.categoriaCorSelecionada,
+                    estilos.categoriaCorSelecionada,
                     { backgroundColor: categoriaSelecionada.cor },
                   ]}
                 />
               </View>
             ) : (
-              <Text style={styles.categoriaSelectorPlaceholder}>
+              <Text style={estilos.categoriaSelectorPlaceholder}>
                 Outros (sem categoria)
               </Text>
             )}
+            <Icon name="keyboard-arrow-down" size={24} color="#4D8FAC" />
           </TouchableOpacity>
         </View>
 
-        {/* Botões de Ação */}
-        <View style={styles.actionButtonsContainer}>
-          {/* Botão Salvar */}
-          <TouchableOpacity
-            style={[styles.saveButton, loading && styles.saveButtonDisabled]}
-            onPress={handleSalvarGasto}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.saveButtonText}>Salvar Alterações</Text>
-            )}
-          </TouchableOpacity>
+        <View style={estilos.actionButtonsContainer}>
+          <BotaoAcao
+            titulo="Salvar Alterações"
+            aoPressionar={handleSalvarGasto}
+            carregando={loading}
+          />
 
-          {/* Botão Excluir */}
-          <TouchableOpacity
-            style={[
-              styles.deleteButtonLarge,
-              loading && styles.deleteButtonDisabled,
-            ]}
-            onPress={handleExcluirGasto}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.deleteButtonLargeText}>Excluir Gasto</Text>
-            )}
-          </TouchableOpacity>
+          <BotaoAcao
+            titulo="Excluir Gasto"
+            aoPressionar={handleExcluirGasto}
+            carregando={loading}
+            corFundo="#E74C3C"
+          />
         </View>
-
         <View style={{ height: 30 }} />
       </ScrollView>
 
-      {/* Modal do DatePicker */}
-      <DatePickerModal />
+      <ModalSelecaoData
+        visivel={modalDataVisible}
+        dataTemp={tempDate}
+        definirDataTemp={setTempDate}
+        aoCancelar={handleCancelarData}
+        aoConfirmar={handleConfirmarData}
+      />
 
-      {/* Modal de Seleção de Categoria */}
-      <Modal
-        animationType="slide"
-        transparent={true}
+      <ModalSelecaoCategoria
         visible={modalCategoriaVisible}
-        onRequestClose={() => setModalCategoriaVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Selecionar Categoria</Text>
-              <TouchableOpacity
-                style={styles.modalCloseButton}
-                onPress={() => setModalCategoriaVisible(false)}
-              >
-                <Text style={styles.modalCloseText}>×</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.modalContent}>
-              {/* Opção "Outros" */}
-              <TouchableOpacity
-                style={styles.categoriaOption}
-                onPress={() => {
-                  setCategoriaSelecionada(null);
-                  setModalCategoriaVisible(false);
-                }}
-              >
-                <View style={styles.categoriaIconContainer}>
-                  <Text style={styles.categoriaIcon}>📂</Text>
-                </View>
-                <View style={styles.categoriaInfo}>
-                  <Text style={styles.categoriaNome}>Outros</Text>
-                  <Text style={styles.categoriaOrcamento}>
-                    Sem orçamento definido
-                  </Text>
-                </View>
-                <View
-                  style={[
-                    styles.categoriaCorIndicator,
-                    { backgroundColor: "#666" },
-                  ]}
-                />
-              </TouchableOpacity>
-
-              {categorias.length === 0 ? (
-                <View style={styles.emptyCategorias}>
-                  <Text style={styles.emptyCategoriaText}>
-                    Nenhuma categoria criada
-                  </Text>
-                </View>
-              ) : (
-                categorias.map(renderCategoriaOption)
-              )}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+        aoFechar={() => setModalCategoriaVisible(false)}
+        categorias={categorias}
+        aoSelecionarCategoria={(categoria) => {
+          setCategoriaSelecionada(categoria);
+          setModalCategoriaVisible(false);
+        }}
+        aoNavegarParaCategorias={() => {
+          setModalCategoriaVisible(false);
+          navigation.navigate("CategoriasScreen");
+        }}
+      />
     </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
+const estilos = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#1E1E2E",
@@ -608,17 +308,6 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 18,
     fontWeight: "600",
-  },
-  deleteButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#2A2A3C",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  deleteButtonText: {
-    fontSize: 18,
   },
   formContainer: {
     flex: 1,
@@ -643,12 +332,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#3A3A4C",
   },
-  textArea: {
-    height: 80,
-    textAlignVertical: "top",
-  },
-
-  // Estilos para o seletor de data
   dateSelector: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -663,80 +346,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 5,
   },
-  selectorArrow: {
-    color: "#4D8FAC",
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-
-  // Estilos para o modal de data
-  dateModalContainer: {
-    backgroundColor: "#2A2A3C",
-    borderRadius: 12,
-    width: "95%",
-    maxHeight: "80%",
-  },
-  datePickerContainer: {
-    flexDirection: "row",
-    height: 200,
-    paddingHorizontal: 10,
-  },
-  dateColumn: {
-    flex: 1,
-    marginHorizontal: 5,
-  },
-  dateColumnTitle: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-    textAlign: "center",
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#3A3A4C",
-  },
-  dateScroll: {
-    flex: 1,
-  },
-  dateOption: {
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    alignItems: "center",
-  },
-  dateOptionSelected: {
-    backgroundColor: "#4D8FAC",
-    borderRadius: 6,
-    marginVertical: 2,
-  },
-  dateOptionText: {
-    color: "#CCCCCC",
-    fontSize: 14,
-  },
-  dateOptionTextSelected: {
-    color: "white",
-    fontWeight: "600",
-  },
-  datePreview: {
-    padding: 15,
-    borderTopWidth: 1,
-    borderTopColor: "#3A3A4C",
-    alignItems: "center",
-  },
-  datePreviewText: {
-    color: "#4D8FAC",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  modalCancelText: {
-    color: "#E74C3C",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  modalConfirmText: {
-    color: "#4D8FAC",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-
   categoriaSelector: {
     flexDirection: "row",
     alignItems: "center",
@@ -748,8 +357,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   categoriaIconSelecionada: {
-    fontSize: 20,
-    marginRight: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
   },
   categoriaNomeSelecionada: {
     color: "white",
@@ -760,129 +373,16 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
+    marginRight: 8,
   },
   categoriaSelectorPlaceholder: {
     color: "#666",
     fontSize: 16,
+    flex: 1,
   },
   actionButtonsContainer: {
     marginTop: 20,
     gap: 15,
-  },
-  saveButton: {
-    backgroundColor: "#4D8FAC",
-    paddingVertical: 15,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  saveButtonDisabled: {
-    backgroundColor: "#3A6D81",
-  },
-  saveButtonText: {
-    color: "#FFF",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  deleteButtonLarge: {
-    backgroundColor: "#E74C3C",
-    paddingVertical: 15,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  deleteButtonDisabled: {
-    backgroundColor: "#A93226",
-  },
-  deleteButtonLargeText: {
-    color: "#FFF",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-
-  // Modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContainer: {
-    backgroundColor: "#2A2A3C",
-    width: "90%",
-    maxHeight: "80%",
-    borderRadius: 12,
-    paddingBottom: 20,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#3A3A4D",
-  },
-  modalTitle: {
-    color: "#FFF",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  modalCloseButton: {
-    padding: 4,
-  },
-  modalCloseText: {
-    color: "#FFF",
-    fontSize: 24,
-  },
-  modalContent: {
-    paddingHorizontal: 16,
-    paddingTop: 10,
-  },
-
-  categoriaOption: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#3A3A4D",
-  },
-  categoriaIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#4D8FAC20",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  categoriaIcon: {
-    fontSize: 18,
-  },
-  categoriaInfo: {
-    flex: 1,
-  },
-  categoriaNome: {
-    color: "#FFF",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  categoriaOrcamento: {
-    color: "#BBB",
-    fontSize: 12,
-    marginTop: 2,
-  },
-  categoriaCorIndicator: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginLeft: 8,
-  },
-
-  emptyCategorias: {
-    paddingVertical: 20,
-    alignItems: "center",
-  },
-  emptyCategoriaText: {
-    color: "#999",
-    fontSize: 14,
   },
 });
 

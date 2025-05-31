@@ -6,11 +6,7 @@ import {
   ScrollView,
   SafeAreaView,
   StatusBar,
-  TouchableOpacity,
-  Modal,
-  TextInput,
   Alert,
-  Dimensions,
 } from "react-native";
 import { useAuth } from "../contexts/AuthContext";
 import {
@@ -25,13 +21,18 @@ import {
 import { db } from "../services/firebase";
 import Icon from "react-native-vector-icons/MaterialIcons";
 
-const { width } = Dimensions.get("window");
+// Importar os componentes personalizados
+import BotaoAcao from "../components/BotaoAcao";
+import BotaoSimples from "../components/BotaoSimples";
+import CategoriaItem from "../components/CategoriaItem";
+import ModalCategoria from "../components/ModalCategoria";
 
 const CategoriasScreen = ({ navigation }) => {
   const { currentUser } = useAuth();
   const [categorias, setCategorias] = useState([]);
   const [gastos, setGastos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [salvando, setSalvando] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingCategoria, setEditingCategoria] = useState(null);
   const [formData, setFormData] = useState({
@@ -40,39 +41,6 @@ const CategoriasScreen = ({ navigation }) => {
     icone: "attach-money",
     cor: "#4D8FAC",
   });
-
-  const icones = [
-    "attach-money",
-    "home",
-    "directions-car",
-    "restaurant",
-    "shopping-bag",
-    "sports-esports",
-    "phone-android",
-    "flash-on",
-    "local-hospital",
-    "school",
-    "movie",
-    "shopping-cart",
-    "work",
-    "train",
-    "fitness-center",
-    "pets",
-    "local-gas-station",
-    "wifi",
-    "music-note",
-    "cake",
-  ];
-  const cores = [
-    "#4D8FAC",
-    "#E74C3C",
-    "#27AE60",
-    "#F39C12",
-    "#9B59B6",
-    "#E67E22",
-    "#1ABC9C",
-    "#34495E",
-  ];
 
   useEffect(() => {
     if (!currentUser) return;
@@ -187,6 +155,8 @@ const CategoriasScreen = ({ navigation }) => {
       return;
     }
 
+    setSalvando(true);
+
     try {
       const categoriaData = {
         nome: formData.nome.trim(),
@@ -213,6 +183,8 @@ const CategoriasScreen = ({ navigation }) => {
     } catch (error) {
       console.error("Erro ao salvar categoria:", error);
       Alert.alert("Erro", "Erro ao salvar categoria");
+    } finally {
+      setSalvando(false);
     }
   };
 
@@ -251,75 +223,7 @@ const CategoriasScreen = ({ navigation }) => {
     return `R$ ${value.toFixed(2).replace(".", ",")}`;
   };
 
-  const calcularPercentual = (gasto, orcamento) => {
-    if (orcamento === 0) return 0;
-    return Math.min((gasto / orcamento) * 100, 100);
-  };
-
-  const getCorProgresso = (percentual) => {
-    if (percentual < 50) return "#27AE60";
-    if (percentual < 80) return "#F39C12";
-    return "#E74C3C";
-  };
-
   const gastosPorCategoria = calcularGastosPorCategoria();
-
-  const renderCategoriaItem = (categoria) => {
-    const gastoAtual = gastosPorCategoria[categoria.nome] || 0;
-    const percentual = calcularPercentual(gastoAtual, categoria.orcamento);
-    const corProgresso = getCorProgresso(percentual);
-    const restante = Math.max(categoria.orcamento - gastoAtual, 0);
-
-    return (
-      <TouchableOpacity
-        key={categoria.id}
-        style={[styles.categoriaItem, { borderLeftColor: categoria.cor }]}
-        onPress={() => handleEditCategoria(categoria)}
-        onLongPress={() => handleDeleteCategoria(categoria)}
-      >
-        <View style={styles.categoriaHeader}>
-          <View style={styles.categoriaIconContainer}>
-            <Icon name={categoria.icone} size={20} color="white" />
-          </View>
-          <View style={styles.categoriaInfo}>
-            <Text style={styles.categoriaNome}>{categoria.nome}</Text>
-            <Text style={styles.categoriaOrcamento}>
-              Orçamento: {formatCurrency(categoria.orcamento)}
-            </Text>
-          </View>
-          <View style={styles.categoriaValores}>
-            <Text style={styles.categoriaGasto}>
-              {formatCurrency(gastoAtual)}
-            </Text>
-            <Text style={styles.categoriaRestante}>
-              Resta: {formatCurrency(restante)}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBar}>
-            <View
-              style={[
-                styles.progressFill,
-                {
-                  width: `${percentual}%`,
-                  backgroundColor: corProgresso,
-                },
-              ]}
-            />
-          </View>
-          <Text style={styles.progressText}>{percentual.toFixed(1)}%</Text>
-        </View>
-
-        {percentual > 100 && (
-          <View style={styles.alertContainer}>
-            <Text style={styles.alertText}>⚠️ Orçamento excedido!</Text>
-          </View>
-        )}
-      </TouchableOpacity>
-    );
-  };
 
   // Renderizar categoria "Outros" se houver gastos sem categoria específica
   const renderOutrosCategoria = () => {
@@ -367,12 +271,12 @@ const CategoriasScreen = ({ navigation }) => {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.tituloHeader}>Categorias</Text>
-        <TouchableOpacity
-          style={styles.botaoAdicionar}
-          onPress={handleNovaCategoria}
-        >
-          <Text style={styles.textoBotaoAdicionar}>+</Text>
-        </TouchableOpacity>
+        <BotaoSimples
+          titulo="Nova Categoria"
+          aoPressionar={handleNovaCategoria}
+          corTexto="white"
+          estilo={styles.botaoNova}
+        />
       </View>
 
       {/* Resumo */}
@@ -410,12 +314,26 @@ const CategoriasScreen = ({ navigation }) => {
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>Nenhuma categoria criada</Text>
             <Text style={styles.emptySubtext}>
-              Toque no + para criar sua primeira categoria
+              Toque em "Nova" para criar sua primeira categoria
             </Text>
+            <BotaoAcao
+              titulo="Criar Primeira Categoria"
+              aoPressionar={handleNovaCategoria}
+              estilo={styles.botaoCriarPrimeira}
+            />
           </View>
         ) : (
           <>
-            {categorias.map(renderCategoriaItem)}
+            {categorias.map((categoria) => (
+              <CategoriaItem
+                key={categoria.id}
+                categoria={categoria}
+                gastoAtual={gastosPorCategoria[categoria.nome] || 0}
+                aoEditar={handleEditCategoria}
+                aoExcluir={handleDeleteCategoria}
+                formatCurrency={formatCurrency}
+              />
+            ))}
             {renderOutrosCategoria()}
           </>
         )}
@@ -424,107 +342,15 @@ const CategoriasScreen = ({ navigation }) => {
       </ScrollView>
 
       {/* Modal para criar/editar categoria */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={handleCloseModal}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {editingCategoria ? "Editar Categoria" : "Nova Categoria"}
-              </Text>
-              <TouchableOpacity
-                style={styles.modalCloseButton}
-                onPress={handleCloseModal}
-              >
-                <Text style={styles.modalCloseText}>×</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.modalContent}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Nome da Categoria</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={formData.nome}
-                  onChangeText={(text) =>
-                    setFormData({ ...formData, nome: text })
-                  }
-                  placeholder="Ex: Alimentação, Transporte..."
-                  placeholderTextColor="#666"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Orçamento Mensal</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={formData.orcamento}
-                  onChangeText={(text) =>
-                    setFormData({ ...formData, orcamento: text })
-                  }
-                  placeholder="0,00"
-                  placeholderTextColor="#666"
-                  keyboardType="numeric"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Ícone</Text>
-                <View style={styles.iconGrid}>
-                  {icones.map((icone) => (
-                    <TouchableOpacity
-                      key={icone}
-                      style={[
-                        styles.iconOption,
-                        formData.icone === icone && styles.iconOptionSelected,
-                      ]}
-                      onPress={() => setFormData({ ...formData, icone })}
-                    >
-                      <Icon name={icone} size={20} color="white" />
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Cor</Text>
-                <View style={styles.colorGrid}>
-                  {cores.map((cor) => (
-                    <TouchableOpacity
-                      key={cor}
-                      style={[
-                        styles.colorOption,
-                        { backgroundColor: cor },
-                        formData.cor === cor && styles.colorOptionSelected,
-                      ]}
-                      onPress={() => setFormData({ ...formData, cor })}
-                    />
-                  ))}
-                </View>
-              </View>
-            </ScrollView>
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={styles.modalCancelButton}
-                onPress={handleCloseModal}
-              >
-                <Text style={styles.modalCancelText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.modalSaveButton}
-                onPress={handleSaveCategoria}
-              >
-                <Text style={styles.modalSaveText}>Salvar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <ModalCategoria
+        visivel={modalVisible}
+        editandoCategoria={editingCategoria}
+        dadosFormulario={formData}
+        alterarDadosFormulario={setFormData}
+        aoFechar={handleCloseModal}
+        aoSalvar={handleSaveCategoria}
+        salvando={salvando}
+      />
     </SafeAreaView>
   );
 };
@@ -543,33 +369,15 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#2A2A3C",
   },
-  backButton: {
-    backgroundColor: "#2A2A3C",
-    padding: 10,
-    borderRadius: 20,
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  backButtonText: {
-    color: "#4D8FAC",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
   tituloHeader: {
     color: "white",
     fontSize: 24,
     fontWeight: "bold",
   },
-  botaoAdicionar: {
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  textoBotaoAdicionar: {
-    color: "white",
-    fontSize: 28,
-    fontWeight: "bold",
+  botaoNova: {
+    backgroundColor: "#2A2A3C",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
   },
   resumoContainer: {
     backgroundColor: "#2A2A3C",
@@ -616,6 +424,26 @@ const styles = StyleSheet.create({
     color: "#CCCCCC",
     fontSize: 16,
   },
+  emptyContainer: {
+    alignItems: "center",
+    marginTop: 50,
+  },
+  emptyText: {
+    color: "#CCCCCC",
+    fontSize: 16,
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    color: "#888",
+    fontSize: 14,
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  botaoCriarPrimeira: {
+    marginTop: 10,
+    width: 250,
+  },
+  // Estilos para o componente "Outros" que ficou inline
   categoriaItem: {
     backgroundColor: "#2A2A3C",
     borderRadius: 12,
@@ -637,9 +465,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 12,
   },
-  categoriaIcon: {
-    fontSize: 20,
-  },
   categoriaInfo: {
     flex: 1,
   },
@@ -660,173 +485,6 @@ const styles = StyleSheet.create({
     color: "#4D8FAC",
     fontSize: 16,
     fontWeight: "bold",
-  },
-  categoriaRestante: {
-    color: "#CCCCCC",
-    fontSize: 12,
-  },
-  progressContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  progressBar: {
-    flex: 1,
-    height: 6,
-    backgroundColor: "#3A3A4C",
-    borderRadius: 3,
-    marginRight: 10,
-  },
-  progressFill: {
-    height: "100%",
-    borderRadius: 3,
-  },
-  progressText: {
-    color: "#CCCCCC",
-    fontSize: 12,
-    fontWeight: "600",
-    width: 40,
-    textAlign: "right",
-  },
-  alertContainer: {
-    marginTop: 8,
-    padding: 8,
-    backgroundColor: "#E74C3C20",
-    borderRadius: 6,
-  },
-  alertText: {
-    color: "#E74C3C",
-    fontSize: 12,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-  emptyContainer: {
-    alignItems: "center",
-    marginTop: 50,
-  },
-  emptyText: {
-    color: "#CCCCCC",
-    fontSize: 16,
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    color: "#888",
-    fontSize: 14,
-    textAlign: "center",
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContainer: {
-    backgroundColor: "#2A2A3C",
-    borderRadius: 12,
-    width: width - 40,
-    maxHeight: "80%",
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#3A3A4C",
-  },
-  modalTitle: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  modalCloseButton: {
-    padding: 5,
-  },
-  modalCloseText: {
-    color: "#4D8FAC",
-    fontSize: 24,
-    fontWeight: "bold",
-  },
-  modalContent: {
-    padding: 20,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  inputLabel: {
-    color: "white",
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 8,
-  },
-  textInput: {
-    backgroundColor: "#3A3A4C",
-    borderRadius: 8,
-    padding: 12,
-    color: "white",
-    fontSize: 16,
-  },
-  iconGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  iconOption: {
-    backgroundColor: "#3A3A4C",
-    padding: 12,
-    borderRadius: 8,
-    width: 50,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  iconOptionSelected: {
-    backgroundColor: "#4D8FAC",
-  },
-  iconOptionText: {
-    fontSize: 20,
-  },
-  colorGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  colorOption: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 3,
-    borderColor: "transparent",
-  },
-  colorOptionSelected: {
-    borderColor: "white",
-  },
-  modalActions: {
-    flexDirection: "row",
-    padding: 20,
-    gap: 10,
-  },
-  modalCancelButton: {
-    flex: 1,
-    backgroundColor: "#3A3A4C",
-    padding: 15,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  modalCancelText: {
-    color: "#CCCCCC",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  modalSaveButton: {
-    flex: 1,
-    backgroundColor: "#4D8FAC",
-    padding: 15,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  modalSaveText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
   },
 });
 
