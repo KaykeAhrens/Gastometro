@@ -19,37 +19,31 @@ const LoginScreen = ({ navigation }) => {
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
+  const realizarLogin = async () => {
     if (!email || !senha) {
       Alert.alert("Erro", "Por favor, preencha todos os campos");
       return;
     }
 
-    setLoading(true);
+    setLoading(true); // pra fazer uma animaçãozinha basica de quando clica no cadastrar
     try {
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        senha
-      );
-      console.log("Login bem-sucedido:", userCredential.user.uid);
-      // Não precisa navegar manualmente, o AuthContext vai cuidar disso
-    } catch (error) {
-      console.error("Erro no login:", error);
-      let errorMessage = "Falha no login";
-
+      await signInWithEmailAndPassword(auth, email, senha);
+      // não precisa navegar manualmente, o AuthContext vai cuidar disso
+    } catch (erro) {
+      let msgErro = "Falha no login";
+      // aqui tratamos os erros que podem acontecer no cadastro
       if (
-        error.code === "auth/user-not-found" ||
-        error.code === "auth/wrong-password"
+        erro.code === "auth/user-not-found" ||
+        erro.code === "auth/wrong-password" // o signInWithEmailAndPassword do firebase retorna uns padrões de erro, dxamos mais clean pro usuario
       ) {
-        errorMessage = "E-mail ou senha incorretos";
-      } else if (error.code === "auth/invalid-email") {
-        errorMessage = "E-mail inválido";
-      } else if (error.code === "auth/invalid-credential") {
-        errorMessage = "Credenciais inválidas";
+        msgErro = "E-mail ou senha incorretos";
+      } else if (erro.code === "auth/invalid-email") {
+        msgErro = "E-mail inválido";
+      } else if (erro.code === "auth/invalid-credential") {
+        msgErro = "Credenciais inválidas";
       }
 
-      Alert.alert("Erro", errorMessage);
+      Alert.alert("Erro", msgErro);
     } finally {
       setLoading(false);
     }
@@ -62,10 +56,10 @@ const LoginScreen = ({ navigation }) => {
       <View style={styles.loginContainer}>
         <View style={styles.loginHeader}>
           <View style={styles.logoLoginContainer}>
-            <View/>
+            <View />
             <Image
-            source={require("../../assets/images/logo.png")}
-            style={styles.logo}
+              source={require("../../assets/images/logo.png")}
+              style={styles.logo}
             />
             <Text style={styles.logoText}>Gastômetro</Text>
           </View>
@@ -99,7 +93,7 @@ const LoginScreen = ({ navigation }) => {
 
           <TouchableOpacity
             style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleLogin}
+            onPress={realizarLogin}
             disabled={loading}
           >
             {loading ? (
@@ -110,10 +104,10 @@ const LoginScreen = ({ navigation }) => {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.forgotPassword}
+            style={styles.btnCadastro}
             onPress={() => navigation.navigate("Register")}
           >
-            <Text style={styles.forgotPasswordText}>
+            <Text style={styles.btnCadastroText}>
               Não tem uma conta? Cadastre-se
             </Text>
           </TouchableOpacity>
@@ -191,11 +185,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  forgotPassword: {
+  btnCadastro: {
     marginTop: 20,
     alignItems: "center",
   },
-  forgotPasswordText: {
+  btnCadastroText: {
     color: "#4D8FAC",
     fontSize: 14,
   },

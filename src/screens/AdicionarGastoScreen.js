@@ -1,4 +1,3 @@
-// AdicionarGastoScreen.js
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -28,41 +27,47 @@ import CampoInput from "../components/CampoInput";
 import ModalSelecaoData from "../components/ModalSelecaoData";
 
 const AdicionarGastoScreen = ({ navigation }) => {
-  const { currentUser } = useAuth();
-  const [titulo, setTitulo] = useState("");
-  const [descricao, setDescricao] = useState("");
-  const [valor, setValor] = useState("");
-  const [categoriaSelecionada, setCategoriaSelecionada] = useState(null);
-  const [categorias, setCategorias] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false);
-
-  const [dataGasto, setDataGasto] = useState(new Date());
-  const [modalDataVisible, setModalDataVisible] = useState(false);
-  const [tempDate, setTempDate] = useState(new Date());
+  const { currentUser } = useAuth(); // pega o usuario logado
+  const [titulo, setTitulo] = useState(""); // título do gasto
+  const [descricao, setDescricao] = useState(""); // descrição do gasto
+  const [valor, setValor] = useState(""); // valor do gasto, deve ser um número
+  const [categoriaSelecionada, setCategoriaSelecionada] = useState(null); // categoria selecionada para o gasto, pode ser null se não houver categoria
+  const [categorias, setCategorias] = useState([]); // lista de categorias cadastradas
+  const [loading, setLoading] = useState(false); // pra fazer animação de carregamento
+  const [modalVisible, setModalVisible] = useState(false); // controle de visibilidade do modal de seleção de categoria
+  const [dataGasto, setDataGasto] = useState(new Date()); // data do gasto, inicia com a data atual
+  const [modalDataVisible, setModalDataVisible] = useState(false); // controle de visibilidade do modal de seleção de data
+  const [tempDate, setTempDate] = useState(new Date()); // data temporária para manipulação antes de confirmar a seleção
 
   useEffect(() => {
-    if (currentUser) fetchCategorias();
+    if (currentUser) buscarCategorias();
   }, [currentUser]);
 
-  const fetchCategorias = async () => {
+  // buscar categorias cadastradas
+  const buscarCategorias = async () => {
     try {
       const categoriasQuery = query(
-        collection(db, "categorias"),
-        where("userId", "==", currentUser.uid)
+        collection(db, "categorias"), // coleção de categorias no Firestore
+        where("userId", "==", currentUser.uid) // filtra por usuário logado onde userId é o ID do usuário logado
       );
-      const categoriasSnapshot = await getDocs(categoriasQuery);
-      const categoriasData = [];
-      categoriasSnapshot.forEach((doc) => {
-        categoriasData.push({ id: doc.id, ...doc.data() });
+      const resultado = await getDocs(categoriasQuery);
+      const categoriasEncontradas = [];
+
+      // percorre cada categoria e adiciona ao array de categorias encontradas, incluindo também o ID de cada documento do Firestore.
+      resultado.forEach((doc) => {
+        const data = doc.data();
+        categoriasEncontradas.push({
+          id: doc.id,
+          ...data, // operador spread (...) para incluir todos os campos da categoria (id, nome, icone, cor, etc.)
+        });
       });
-      setCategorias(categoriasData);
-    } catch (error) {
-      console.error("Erro ao buscar categorias:", error);
+      setCategorias(categoriasEncontradas);
+    } catch (erro) {
+      //console.log("Erro ao buscar categorias");
     }
   };
 
-  const handleCriarGasto = async () => {
+  const criarGasto = async () => {
     if (!titulo.trim() || !valor.trim()) {
       Alert.alert("Erro", "Por favor, preencha pelo menos o título e o valor");
       return;
@@ -81,65 +86,69 @@ const AdicionarGastoScreen = ({ navigation }) => {
 
     setLoading(true);
     try {
+      // adiciona novo gasto na coleção "gastos" do Firestore
       await addDoc(collection(db, "gastos"), {
         titulo: titulo.trim(),
         descricao: descricao.trim() || "",
         valor: valorNumerico,
-        categoria: categoriaSelecionada?.nome || "Outros",
-        categoriaId: categoriaSelecionada?.id || null,
-        userId: currentUser.uid,
-        createdAt: Timestamp.fromDate(dataGasto),
-        updatedAt: serverTimestamp(),
+        categoria: categoriaSelecionada?.nome || "Outros", // usa nome da categoria selecionada ou "Outros" se não houver categoria
+        categoriaId: categoriaSelecionada?.id || null, // usa ID da categoria selecionada ou null se não houver categoria
+        userId: currentUser.uid, // associa o gasto ao usuário logado
+        createdAt: Timestamp.fromDate(dataGasto), // converte a data selecionada para Timestamp do Firebase
+        updatedAt: serverTimestamp(), // timestamp do servidor para controle de atualização
       });
 
+      // limpa os campos após criar o gasto
       setTitulo("");
       setDescricao("");
       setValor("");
       setCategoriaSelecionada(null);
       setDataGasto(new Date());
-      navigation.goBack();
-    } catch (error) {
-      console.error("Erro ao criar gasto:", error);
-      Alert.alert("Erro", `Erro ao criar gasto: ${error.message}`);
+      navigation.goBack(); // volta para a tela anterior
+    } catch (erro) {
+      Alert.alert("Erro", "Erro ao criar gasto");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSelectCategoria = (categoria) => {
+  const selecionarCategoria = (categoria) => {
     setCategoriaSelecionada(categoria);
     setModalVisible(false);
   };
 
-  const handleNavigateToCategories = () => {
+  const navegarCategoriasScreen = () => {
     navigation.navigate("Categorias");
   };
 
+  // formatar data para exibição no formato brasileiro
   const formatarData = (data) => data.toLocaleDateString("pt-BR");
 
-  const handleConfirmarData = () => {
+  const cliqueConfirmarData = () => {
     setDataGasto(tempDate);
     setModalDataVisible(false);
   };
 
-  const handleCancelarData = () => {
+  const cancelarEscolhaData = () => {
     setTempDate(dataGasto);
     setModalDataVisible(false);
   };
 
   return (
-    <SafeAreaView style={estilos.container}>
+    <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1E1E2E" />
 
-      <View style={estilos.header}>
+      {/* Header */}
+      <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={estilos.backButton}>← Voltar</Text>
+          <Text style={styles.backButton}>← Voltar</Text>
         </TouchableOpacity>
-        <Text style={estilos.headerTitle}>Novo Gasto</Text>
+        <Text style={styles.headerTitle}>Novo Gasto</Text>
         <View style={{ width: 60 }} />
       </View>
 
-      <ScrollView style={estilos.formContainer}>
+      <ScrollView style={styles.formContainer}>
+        {/* Campo Título */}
         <CampoInput
           rotulo="Título *"
           valor={titulo}
@@ -147,6 +156,7 @@ const AdicionarGastoScreen = ({ navigation }) => {
           placeholder="Ex: McDonald's"
         />
 
+        {/* Campo Descrição */}
         <CampoInput
           rotulo="Descrição"
           valor={descricao}
@@ -155,6 +165,7 @@ const AdicionarGastoScreen = ({ navigation }) => {
           multiline
         />
 
+        {/* Campo Valor */}
         <CampoInput
           rotulo="Valor *"
           valor={valor}
@@ -163,34 +174,37 @@ const AdicionarGastoScreen = ({ navigation }) => {
           keyboardType="numeric"
         />
 
-        <View style={estilos.inputContainer}>
-          <Text style={estilos.inputLabel}>Data do Gasto</Text>
+        {/* Seletor de Data */}
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Data do Gasto</Text>
           <TouchableOpacity
-            style={[estilos.input, estilos.dateSelector]}
+            style={[styles.input, styles.dateSelector]}
             onPress={() => {
               setTempDate(dataGasto);
               setModalDataVisible(true);
             }}
           >
-            <Text style={estilos.dateText}>{formatarData(dataGasto)}</Text>
+            <Text style={styles.dateText}>{formatarData(dataGasto)}</Text>
             <Icon name="calendar-today" size={20} color="#4D8FAC" />
           </TouchableOpacity>
-          <Text style={estilos.dateHint}>
+          <Text style={styles.dateHint}>
             Selecione a data em que o gasto foi realizado
           </Text>
         </View>
 
-        <View style={estilos.inputContainer}>
-          <Text style={estilos.inputLabel}>Categoria</Text>
+        {/* Seletor de Categoria */}
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Categoria</Text>
           <TouchableOpacity
-            style={[estilos.input, estilos.categoriaSelector]}
+            style={[styles.input, styles.categoriaSelector]}
             onPress={() => setModalVisible(true)}
           >
             {categoriaSelecionada ? (
-              <View style={estilos.categoriaSelecionadaContainer}>
+              // exibe categoria selecionada com ícone e cor
+              <View style={styles.categoriaSelecionadaContainer}>
                 <View
                   style={[
-                    estilos.categoriaIconSelecionada,
+                    styles.categoriaIconSelecionada,
                     { backgroundColor: categoriaSelecionada.cor + "20" },
                   ]}
                 >
@@ -200,27 +214,28 @@ const AdicionarGastoScreen = ({ navigation }) => {
                     color={categoriaSelecionada.cor}
                   />
                 </View>
-                <Text style={estilos.categoriaNomeSelecionada}>
+                <Text style={styles.categoriaNomeSelecionada}>
                   {categoriaSelecionada.nome}
                 </Text>
                 <View
                   style={[
-                    estilos.categoriaCorSelecionada,
+                    styles.categoriaCorSelecionada,
                     { backgroundColor: categoriaSelecionada.cor },
                   ]}
                 />
               </View>
             ) : (
-              <View style={estilos.categoriaSelecionadaContainer}>
+              // exibe placeholder quando nenhuma categoria está selecionada
+              <View style={styles.categoriaSelecionadaContainer}>
                 <View
                   style={[
-                    estilos.categoriaIconSelecionada,
+                    styles.categoriaIconSelecionada,
                     { backgroundColor: "#66666620" },
                   ]}
                 >
                   <Icon name="folder" size={18} color="#666" />
                 </View>
-                <Text style={estilos.categoriaSelectorPlaceholder}>
+                <Text style={styles.categoriaSelectorPlaceholder}>
                   Outros (sem categoria)
                 </Text>
               </View>
@@ -228,46 +243,50 @@ const AdicionarGastoScreen = ({ navigation }) => {
             <Icon name="keyboard-arrow-down" size={24} color="#4D8FAC" />
           </TouchableOpacity>
 
+          {/* Botão para limpar categoria selecionada */}
           {categoriaSelecionada && (
             <TouchableOpacity
-              style={estilos.limparCategoriaBotao}
+              style={styles.limparCategoriaBotao}
               onPress={() => setCategoriaSelecionada(null)}
             >
-              <Text style={estilos.limparCategoriaTexto}>Limpar seleção</Text>
+              <Text style={styles.limparCategoriaTexto}>Limpar seleção</Text>
             </TouchableOpacity>
           )}
         </View>
 
+        {/* Botão para criar o gasto */}
         <BotaoAcao
           titulo="Criar Gasto"
-          aoPressionar={handleCriarGasto}
+          aoPressionar={criarGasto}
           carregando={loading}
         />
 
         <View style={{ height: 50 }} />
       </ScrollView>
 
+      {/* Modal de Seleção de Data */}
       <ModalSelecaoData
         visivel={modalDataVisible}
         dataTemp={tempDate}
         definirDataTemp={setTempDate}
-        aoCancelar={handleCancelarData}
-        aoConfirmar={handleConfirmarData}
+        aoCancelar={cancelarEscolhaData}
+        aoConfirmar={cliqueConfirmarData}
       />
 
+      {/* Modal de Seleção de Categoria */}
       <ModalSelecaoCategoria
         visible={modalVisible}
         aoFechar={() => setModalVisible(false)}
         categorias={categorias}
-        aoSelecionarCategoria={handleSelectCategoria}
-        aoNavegarParaCategorias={handleNavigateToCategories}
+        aoSelecionarCategoria={selecionarCategoria}
+        aoNavegarParaCategorias={navegarCategoriasScreen}
         exibirBotaoCriarCategoria={true}
       />
     </SafeAreaView>
   );
 };
 
-const estilos = StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#1E1E2E",

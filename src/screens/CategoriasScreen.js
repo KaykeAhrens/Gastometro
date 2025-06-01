@@ -20,96 +20,95 @@ import {
 } from "firebase/firestore";
 import { db } from "../services/firebase";
 import Icon from "react-native-vector-icons/MaterialIcons";
-
-// Importar os componentes personalizados
 import BotaoAcao from "../components/BotaoAcao";
 import BotaoSimples from "../components/BotaoSimples";
 import CategoriaItem from "../components/CategoriaItem";
 import ModalCategoria from "../components/ModalCategoria";
 
 const CategoriasScreen = ({ navigation }) => {
-  const { currentUser } = useAuth();
-  const [categorias, setCategorias] = useState([]);
-  const [gastos, setGastos] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [salvando, setSalvando] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [editingCategoria, setEditingCategoria] = useState(null);
-  const [formData, setFormData] = useState({
+  const { currentUser } = useAuth(); // pega o usuario logado
+  const [categorias, setCategorias] = useState([]); // lista de categorias do usuário
+  const [gastos, setGastos] = useState([]); // lista de gastos do usuário
+  const [loading, setLoading] = useState(true); // pra fazer animação de carregamento
+  const [salvando, setSalvando] = useState(false); // estado para mostrar que está salvando
+  const [modalVisible, setModalVisible] = useState(false); // controle de visibilidade do modal
+  const [editandoCategoria, setEditandoCategoria] = useState(null); // categoria sendo editada
+  const [formDados, setFormDados] = useState({
     nome: "",
     orcamento: "",
     icone: "attach-money",
     cor: "#4D8FAC",
-  });
+  }); // dados do formulário
 
   useEffect(() => {
     if (!currentUser) return;
 
-    let unsubscribeCategorias;
-    let unsubscribeGastos;
+    let atualizarCategorias;
+    let atualizarGastos;
 
-    // Listener para categorias
+    // listener para categorias
     const categoriasQuery = query(
-      collection(db, "categorias"),
-      where("userId", "==", currentUser.uid)
+      collection(db, "categorias"), // coleção de categorias no Firestore
+      where("userId", "==", currentUser.uid) // filtra por usuário logado onde userId é o ID do usuário logado
     );
 
-    unsubscribeCategorias = onSnapshot(categoriasQuery, (snapshot) => {
-      const categoriasData = [];
-      snapshot.forEach((doc) => {
-        categoriasData.push({ id: doc.id, ...doc.data() });
+    atualizarCategorias = onSnapshot(categoriasQuery, (resultado) => {
+      const categoriasEncontradas = [];
+      resultado.forEach((doc) => {
+        categoriasEncontradas.push({ id: doc.id, ...doc.data() });
       });
-      setCategorias(categoriasData);
+      setCategorias(categoriasEncontradas);
     });
 
-    // Listener para gastos
+    // listener para gastos
     const gastosQuery = query(
-      collection(db, "gastos"),
-      where("userId", "==", currentUser.uid)
+      collection(db, "gastos"), // coleção de gastos no Firestore
+      where("userId", "==", currentUser.uid) // filtra por usuário logado onde userId é o ID do usuário logado
     );
 
-    unsubscribeGastos = onSnapshot(gastosQuery, (snapshot) => {
-      const gastosData = [];
-      snapshot.forEach((doc) => {
+    atualizarGastos = onSnapshot(gastosQuery, (resultado) => {
+      const gastosEncontrados = [];
+      resultado.forEach((doc) => {
         const data = doc.data();
-        gastosData.push({
+        gastosEncontrados.push({
           id: doc.id,
           ...data,
-          createdAt: data.createdAt?.toDate() || new Date(),
+          createdAt: data.createdAt?.toDate() || new Date(), // busca o createdAt do gasto no firestore ou define como a data atual se não existir
         });
       });
-      setGastos(gastosData);
+      setGastos(gastosEncontrados);
       setLoading(false);
     });
 
     return () => {
-      if (unsubscribeCategorias) unsubscribeCategorias();
-      if (unsubscribeGastos) unsubscribeGastos();
+      if (atualizarCategorias) atualizarCategorias();
+      if (atualizarGastos) atualizarGastos();
     };
   }, [currentUser]);
 
-  // Recarregar quando a tela ganha foco
+  // recarregar quando a tela é exibida
   useEffect(() => {
-    const unsubscribe = navigation.addListener("focus", () => {
-      console.log("Tela Categorias ganhou foco");
-      // Os listeners já estão cuidando da atualização em tempo real
+    const exibida = navigation.addListener("focus", () => {
+      //console.log("Tela Categorias foi exibida");
+      // os listeners já estão cuidando da atualização em tempo real
     });
 
-    return unsubscribe;
+    return exibida;
   }, [navigation]);
 
+  // calcular gastos por categoria
   const calcularGastosPorCategoria = () => {
     const gastosPorCategoria = {};
 
-    // Primeiro, inicializar todas as categorias com 0
+    // primeiro, inicializar todas as categorias com 0
     categorias.forEach((categoria) => {
       gastosPorCategoria[categoria.nome] = 0;
     });
 
-    // Adicionar categoria "Outros" se não existir
+    // adicionar categoria "outros" se não existir
     gastosPorCategoria["Outros"] = 0;
 
-    // Somar os gastos por categoria
+    // somar os gastos por categoria
     gastos.forEach((gasto) => {
       const categoria = gasto.categoria || "Outros";
       if (!gastosPorCategoria[categoria]) {
@@ -121,10 +120,10 @@ const CategoriasScreen = ({ navigation }) => {
     return gastosPorCategoria;
   };
 
-  const handleNovaCategoria = () => {
-    // Limpar todos os estados de edição
-    setEditingCategoria(null);
-    setFormData({
+  const addNovaCategoria = () => {
+    // limpar todos os estados de edição
+    setEditandoCategoria(null);
+    setFormDados({
       nome: "",
       orcamento: "",
       icone: "attach-money",
@@ -133,10 +132,10 @@ const CategoriasScreen = ({ navigation }) => {
     setModalVisible(true);
   };
 
-  const handleCloseModal = () => {
+  const closeModal = () => {
     setModalVisible(false);
-    setEditingCategoria(null);
-    setFormData({
+    setEditandoCategoria(null);
+    setFormDados({
       nome: "",
       orcamento: "",
       icone: "attach-money",
@@ -144,13 +143,13 @@ const CategoriasScreen = ({ navigation }) => {
     });
   };
 
-  const handleSaveCategoria = async () => {
-    if (!formData.nome.trim()) {
+  const salvarCategoria = async () => {
+    if (!formDados.nome.trim()) {
       Alert.alert("Erro", "Nome da categoria é obrigatório");
       return;
     }
 
-    if (!formData.orcamento || isNaN(parseFloat(formData.orcamento))) {
+    if (!formDados.orcamento || isNaN(parseFloat(formDados.orcamento))) {
       Alert.alert("Erro", "Orçamento deve ser um valor válido");
       return;
     }
@@ -159,38 +158,40 @@ const CategoriasScreen = ({ navigation }) => {
 
     try {
       const categoriaData = {
-        nome: formData.nome.trim(),
-        orcamento: parseFloat(formData.orcamento),
-        icone: formData.icone,
-        cor: formData.cor,
+        nome: formDados.nome.trim(),
+        orcamento: parseFloat(formDados.orcamento),
+        icone: formDados.icone,
+        cor: formDados.cor,
         userId: currentUser.uid,
         createdAt: new Date(),
       };
 
-      if (editingCategoria) {
-        await setDoc(doc(db, "categorias", editingCategoria.id), {
+      if (editandoCategoria) {
+        // atualizar categoria existente
+        await setDoc(doc(db, "categorias", editandoCategoria.id), {
           ...categoriaData,
-          createdAt: editingCategoria.createdAt,
+          createdAt: editandoCategoria.createdAt,
         });
         Alert.alert("Sucesso", "Categoria atualizada com sucesso!");
       } else {
+        // criar nova categoria
         const newDocRef = doc(collection(db, "categorias"));
         await setDoc(newDocRef, categoriaData);
         Alert.alert("Sucesso", "Categoria criada com sucesso!");
       }
 
-      handleCloseModal();
-    } catch (error) {
-      console.error("Erro ao salvar categoria:", error);
+      closeModal();
+    } catch (erro) {
+      //console.log("Erro ao salvar categoria");
       Alert.alert("Erro", "Erro ao salvar categoria");
     } finally {
       setSalvando(false);
     }
   };
 
-  const handleEditCategoria = (categoria) => {
-    setEditingCategoria(categoria);
-    setFormData({
+  const editarCategoria = (categoria) => {
+    setEditandoCategoria(categoria);
+    setFormDados({
       nome: categoria.nome,
       orcamento: categoria.orcamento.toString(),
       icone: categoria.icone,
@@ -199,7 +200,7 @@ const CategoriasScreen = ({ navigation }) => {
     setModalVisible(true);
   };
 
-  const handleDeleteCategoria = (categoria) => {
+  const deletarCategoria = (categoria) => {
     Alert.alert("Confirmar", "Tem certeza que deseja excluir esta categoria?", [
       { text: "Cancelar", style: "cancel" },
       {
@@ -207,10 +208,11 @@ const CategoriasScreen = ({ navigation }) => {
         style: "destructive",
         onPress: async () => {
           try {
+            // deleta a categoria no Firestore pelo ID
             await deleteDoc(doc(db, "categorias", categoria.id));
             Alert.alert("Sucesso", "Categoria excluída com sucesso!");
-          } catch (error) {
-            console.error("Erro ao excluir categoria:", error);
+          } catch (erro) {
+            //console.log("Erro ao excluir categoria");
             Alert.alert("Erro", "Erro ao excluir categoria");
           }
         },
@@ -219,13 +221,14 @@ const CategoriasScreen = ({ navigation }) => {
   };
 
   const formatCurrency = (value) => {
+    // formata número para moeda brasileira
     if (typeof value !== "number") return "R$ 0,00";
     return `R$ ${value.toFixed(2).replace(".", ",")}`;
   };
 
   const gastosPorCategoria = calcularGastosPorCategoria();
 
-  // Renderizar categoria "Outros" se houver gastos sem categoria específica
+  // renderizar categoria "outros" se houver gastos sem categoria específica
   const renderOutrosCategoria = () => {
     const gastoOutros = gastosPorCategoria["Outros"] || 0;
 
@@ -273,7 +276,7 @@ const CategoriasScreen = ({ navigation }) => {
         <Text style={styles.tituloHeader}>Categorias</Text>
         <BotaoSimples
           titulo="Nova Categoria"
-          aoPressionar={handleNovaCategoria}
+          aoPressionar={addNovaCategoria}
           corTexto="white"
           estilo={styles.botaoNova}
         />
@@ -318,7 +321,7 @@ const CategoriasScreen = ({ navigation }) => {
             </Text>
             <BotaoAcao
               titulo="Criar Primeira Categoria"
-              aoPressionar={handleNovaCategoria}
+              aoPressionar={addNovaCategoria}
               estilo={styles.botaoCriarPrimeira}
             />
           </View>
@@ -329,8 +332,8 @@ const CategoriasScreen = ({ navigation }) => {
                 key={categoria.id}
                 categoria={categoria}
                 gastoAtual={gastosPorCategoria[categoria.nome] || 0}
-                aoEditar={handleEditCategoria}
-                aoExcluir={handleDeleteCategoria}
+                aoEditar={editarCategoria}
+                aoExcluir={deletarCategoria}
                 formatCurrency={formatCurrency}
               />
             ))}
@@ -344,11 +347,11 @@ const CategoriasScreen = ({ navigation }) => {
       {/* Modal para criar/editar categoria */}
       <ModalCategoria
         visivel={modalVisible}
-        editandoCategoria={editingCategoria}
-        dadosFormulario={formData}
-        alterarDadosFormulario={setFormData}
-        aoFechar={handleCloseModal}
-        aoSalvar={handleSaveCategoria}
+        editandoCategoria={editandoCategoria}
+        dadosFormulario={formDados}
+        alterarDadosFormulario={setFormDados}
+        aoFechar={closeModal}
+        aoSalvar={salvarCategoria}
         salvando={salvando}
       />
     </SafeAreaView>
@@ -443,7 +446,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     width: 250,
   },
-  // Estilos para o componente "Outros" que ficou inline
+  // estilos para o componente "outros" que ficou inline
   categoriaItem: {
     backgroundColor: "#2A2A3C",
     borderRadius: 12,

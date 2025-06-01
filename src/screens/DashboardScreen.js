@@ -7,52 +7,49 @@ import {
   SafeAreaView,
   StatusBar,
   TouchableOpacity,
-  Dimensions,
 } from "react-native";
 import { useAuth } from "../contexts/AuthContext";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../services/firebase";
 import { useFocusEffect } from "@react-navigation/native";
+import Icon from "react-native-vector-icons/MaterialIcons";
 import GraficoBarras from "../components/GraficoBarras";
 import BotaoAcao from "../components/BotaoAcao";
 
-const { width } = Dimensions.get("window");
-
 const DashboardScreen = ({ navigation }) => {
-  const { currentUser } = useAuth();
-  const [gastos, setGastos] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { currentUser } = useAuth(); // pega o usuario logado
+  const [gastos, setGastos] = useState([]); // lista de gastos do usuário
+  const [loading, setLoading] = useState(true); // pra fazer animação de carregamento
   const [estatisticas, setEstatisticas] = useState({
     totalGastos: 0,
     gastoMedio: 0,
     maiorGasto: 0,
     menorGasto: 0,
     totalItens: 0,
-  });
-  const [gastosPorMes, setGastosPorMes] = useState([]);
-  const [topGastos, setTopGastos] = useState([]);
-  const [ultimaAtualizacao, setUltimaAtualizacao] = useState(new Date());
+  }); // estatísticas calculadas dos gastos
+  const [gastosPorMes, setGastosPorMes] = useState([]); // dados dos gastos agrupados por mês para o gráfico
+  const [topGastos, setTopGastos] = useState([]); // top 5 maiores gastos
 
-  // Refs para controlar os intervalos
-  const intervalRef = useRef(null);
-  const timeoutRef = useRef(null);
+  // useRef é um hook do React que permite criar e manipular referências a valores que podem ser alterados sem causar uma rerenderização do componente
+  // controlar os intervalos de auto refresh
+  const intervalo = useRef(null);
+  const timeout = useRef(null);
 
-  // Carrega dados quando a tela ganha foco
+  // carrega dados quando a tela é exibida
   useFocusEffect(
     React.useCallback(() => {
       if (currentUser) {
-        fetchDadosDashboard();
+        buscarDadosDash();
         iniciarAutoRefresh();
       }
 
-      // Cleanup quando a tela perde foco
+      // para o refresh quando n tá mais na tela
       return () => {
         pararAutoRefresh();
       };
     }, [currentUser])
   );
 
-  // Cleanup quando o componente é desmontado
   useEffect(() => {
     return () => {
       pararAutoRefresh();
@@ -60,66 +57,64 @@ const DashboardScreen = ({ navigation }) => {
   }, []);
 
   const iniciarAutoRefresh = () => {
-    // Para qualquer intervalo existente
     pararAutoRefresh();
 
-    // Configura auto refresh a cada 30 segundos
-    intervalRef.current = setInterval(() => {
-      fetchDadosDashboard(false); // false para não mostrar loading
+    // configura auto refresh a cada 30 segundos
+    intervalo.current = setInterval(() => {
+      buscarDadosDash(false); // false para não mostrar loading
     }, 30000); // 30 segundos
 
-    console.log("Auto refresh iniciado - atualizações a cada 30 segundos");
+    //console.log("Auto refresh iniciado - atualizações a cada 30 segundos");
   };
 
   const pararAutoRefresh = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+    if (intervalo.current) {
+      clearInterval(intervalo.current);
+      intervalo.current = null;
     }
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
+    if (timeout.current) {
+      clearTimeout(timeout.current);
+      timeout.current = null;
     }
   };
 
-  const fetchDadosDashboard = async (mostrarLoading = true) => {
+  // buscar dados do dashboard (gastos do usuário logado)
+  const buscarDadosDash = async (mostrarLoading = true) => {
     try {
       if (mostrarLoading) {
         setLoading(true);
       }
 
       const gastosQuery = query(
-        collection(db, "gastos"),
-        where("userId", "==", currentUser.uid)
+        collection(db, "gastos"), // coleção de gastos no Firestore
+        where("userId", "==", currentUser.uid) // filtra por usuário logado onde userId é o ID do usuário logado
       );
 
-      const snapshot = await getDocs(gastosQuery);
-      const gastosData = [];
+      const resultado = await getDocs(gastosQuery);
+      const gastosEncontrados = [];
 
-      snapshot.forEach((doc) => {
+      // percorre cada gasto retornado pela consulta
+      resultado.forEach((doc) => {
         const data = doc.data();
-        gastosData.push({
+        gastosEncontrados.push({
           id: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate() || new Date(),
+          ...data, // operador spread (...) para incluir todos os campos do gasto
+          createdAt: data.createdAt?.toDate() || new Date(), // busca o createdAt do gasto no firestore ou define como a data atual se não existir
         });
       });
 
-      setGastos(gastosData);
-      calcularEstatisticas(gastosData);
-      processarGastosPorMes(gastosData);
-      processarTopGastos(gastosData);
-      setUltimaAtualizacao(new Date());
+      setGastos(gastosEncontrados); // atualiza o estado com os gastos encontrados
+      calcularEstatisticas(gastosEncontrados); // calcula estatísticas baseadas nos gastos encontrados
+      processarGastosPorMes(gastosEncontrados); // agrupa gastos por mês para o gráfico
+      processarTopGastos(gastosEncontrados); // pega os 5 maiores gastos
 
       if (mostrarLoading) {
         setLoading(false);
       }
 
-      console.log(
-        `Dashboard atualizado: ${gastosData.length} gastos encontrados`
-      );
-    } catch (error) {
-      console.error("Erro ao buscar dados:", error);
+      //console.log("Dashboard atualizado");
+    } catch (erro) {
+      //console.log("Erro ao buscar dados:");
       if (mostrarLoading) {
         setLoading(false);
       }
@@ -127,18 +122,19 @@ const DashboardScreen = ({ navigation }) => {
   };
 
   const refreshManual = () => {
-    // Para o auto refresh temporariamente
+    // para o auto refresh temporariamente
     pararAutoRefresh();
 
-    // Faz refresh imediato
-    fetchDadosDashboard(true);
+    // faz refresh imediato
+    buscarDadosDash(true);
 
-    // Reinicia auto refresh após 2 segundos
-    timeoutRef.current = setTimeout(() => {
+    // reinicia auto refresh após 2 segundos
+    timeout.current = setTimeout(() => {
       iniciarAutoRefresh();
     }, 2000);
   };
 
+  // calcular estatísticas dos gastos (total, média, maior, menor)
   const calcularEstatisticas = (dados) => {
     if (dados.length === 0) {
       setEstatisticas({
@@ -151,11 +147,11 @@ const DashboardScreen = ({ navigation }) => {
       return;
     }
 
-    const valores = dados.map((g) => g.valor);
-    const total = valores.reduce((acc, val) => acc + val, 0);
-    const maior = Math.max(...valores);
-    const menor = Math.min(...valores);
-    const medio = total / valores.length;
+    const valores = dados.map((g) => g.valor); // extrai apenas os valores dos gastos
+    const total = valores.reduce((acc, val) => acc + val, 0); // soma todos os valores (O reduce() em React, como no JavaScript, é usado para iterar sobre um array e acumular um valor único a partir dos seus elementos)
+    const maior = Math.max(...valores); // encontra o maior valor
+    const menor = Math.min(...valores); // encontra o menor valor
+    const medio = total / valores.length; // calcula a média
 
     setEstatisticas({
       totalGastos: total,
@@ -166,19 +162,22 @@ const DashboardScreen = ({ navigation }) => {
     });
   };
 
+  // processar gastos agrupados por mês para exibir no gráfico
   const processarGastosPorMes = (dados) => {
     const gastosPorMesObj = {};
 
+    // percorre cada gasto e agrupa por mês/ano
     dados.forEach((gasto) => {
       const data = gasto.createdAt;
-      const mesAno = `${data.getMonth() + 1}/${data.getFullYear()}`;
+      const mesAno = `${data.getMonth() + 1}/${data.getFullYear()}`; // formato MM/YYYY
 
       if (!gastosPorMesObj[mesAno]) {
         gastosPorMesObj[mesAno] = 0;
       }
-      gastosPorMesObj[mesAno] += gasto.valor;
+      gastosPorMesObj[mesAno] += gasto.valor; // soma os gastos do mesmo mês
     });
 
+    // converte objeto em array e ordena por data
     const gastosPorMesArray = Object.entries(gastosPorMesObj)
       .map(([mes, valor]) => ({ mes, valor }))
       .sort((a, b) => {
@@ -190,14 +189,16 @@ const DashboardScreen = ({ navigation }) => {
     setGastosPorMes(gastosPorMesArray);
   };
 
+  // processar top 5 maiores gastos
   const processarTopGastos = (dados) => {
     const gastosOrdenados = [...dados]
-      .sort((a, b) => b.valor - a.valor)
-      .slice(0, 5);
+      .sort((a, b) => b.valor - a.valor) // ordena por valor decrescente
+      .slice(0, 5); // pega apenas os 5 primeiros
     setTopGastos(gastosOrdenados);
   };
 
   const formatCurrency = (value) => {
+    // formata número para moeda brasileira
     if (typeof value !== "number") return "R$ 0,00";
     return `R$ ${value.toFixed(2).replace(".", ",")}`;
   };
@@ -207,6 +208,7 @@ const DashboardScreen = ({ navigation }) => {
     return `${agora.getMonth() + 1}/${agora.getFullYear()}`;
   };
 
+  // filtra gastos do mês atual
   const gastosDoMesAtual = gastos.filter((gasto) => {
     const dataGasto = gasto.createdAt;
     const mesAnoGasto = `${
@@ -215,6 +217,7 @@ const DashboardScreen = ({ navigation }) => {
     return mesAnoGasto === obterMesAtual();
   });
 
+  // calcula total gasto no mês atual
   const totalMesAtual = gastosDoMesAtual.reduce(
     (acc, gasto) => acc + gasto.valor,
     0
@@ -222,46 +225,46 @@ const DashboardScreen = ({ navigation }) => {
 
   if (loading) {
     return (
-      <SafeAreaView style={estilos.container}>
+      <SafeAreaView style={styles.container}>
         <StatusBar barStyle="light-content" backgroundColor="#1E1E2E" />
-        <View style={estilos.loadingContainer}>
-          <Text style={estilos.loadingText}>Carregando dados...</Text>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Carregando dados...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={estilos.container}>
+    <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1E1E2E" />
 
       {/* Header */}
-      <View style={estilos.header}>
+      <View style={styles.header}>
         <View>
-          <Text style={estilos.headerTitle}>Relatório</Text>
+          <Text style={styles.headerTitle}>Relatório</Text>
         </View>
-        <TouchableOpacity style={estilos.refreshButton} onPress={refreshManual}>
-          <Text style={estilos.refreshText}>↻</Text>
+        <TouchableOpacity onPress={refreshManual}>
+          <Icon name="refresh" size={22} color="#FFF" />
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={estilos.scrollContainer}>
+      <ScrollView style={styles.scrollContainer}>
         {/* Gráfico de Gastos por Mês */}
         <GraficoBarras dados={gastosPorMes} />
 
         {/* Maiores e Menores Gastos */}
-        <View style={estilos.section}>
-          <Text style={estilos.sectionTitle}>Resumo dos Gastos</Text>
-          <View style={estilos.resumoContainer}>
-            <View style={estilos.resumoItem}>
-              <Text style={estilos.resumoLabel}>Maior Gasto</Text>
-              <Text style={[estilos.resumoValor, { color: "#E74C3C" }]}>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Resumo dos Gastos</Text>
+          <View style={styles.resumoContainer}>
+            <View style={styles.resumoItem}>
+              <Text style={styles.resumoLabel}>Maior Gasto</Text>
+              <Text style={[styles.resumoValor, { color: "#E74C3C" }]}>
                 {formatCurrency(estatisticas.maiorGasto)}
               </Text>
             </View>
-            <View style={estilos.resumoItem}>
-              <Text style={estilos.resumoLabel}>Menor Gasto</Text>
-              <Text style={[estilos.resumoValor, { color: "#27AE60" }]}>
+            <View style={styles.resumoItem}>
+              <Text style={styles.resumoLabel}>Menor Gasto</Text>
+              <Text style={[styles.resumoValor, { color: "#27AE60" }]}>
                 {formatCurrency(estatisticas.menorGasto)}
               </Text>
             </View>
@@ -269,25 +272,25 @@ const DashboardScreen = ({ navigation }) => {
         </View>
 
         {/* Top 5 Gastos */}
-        <View style={estilos.section}>
-          <Text style={estilos.sectionTitle}>Top 5 Maiores Gastos</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Top 5 Maiores Gastos</Text>
           {topGastos.map((gasto, index) => (
-            <View key={gasto.id} style={estilos.topGastoItem}>
-              <View style={estilos.topGastoRank}>
-                <Text style={estilos.topGastoRankText}>{index + 1}</Text>
+            <View key={gasto.id} style={styles.topGastoItem}>
+              <View style={styles.topGastoRank}>
+                <Text style={styles.topGastoRankText}>{index + 1}</Text>
               </View>
-              <View style={estilos.topGastoInfo}>
-                <Text style={estilos.topGastoTitulo}>{gasto.titulo}</Text>
+              <View style={styles.topGastoInfo}>
+                <Text style={styles.topGastoTitulo}>{gasto.titulo}</Text>
                 {gasto.descricao && (
-                  <Text style={estilos.topGastoDescricao}>
+                  <Text style={styles.topGastoDescricao}>
                     {gasto.descricao}
                   </Text>
                 )}
-                <Text style={estilos.topGastoData}>
+                <Text style={styles.topGastoData}>
                   {gasto.createdAt.toLocaleDateString("pt-BR")}
                 </Text>
               </View>
-              <Text style={estilos.topGastoValor}>
+              <Text style={styles.topGastoValor}>
                 {formatCurrency(gasto.valor)}
               </Text>
             </View>
@@ -295,27 +298,27 @@ const DashboardScreen = ({ navigation }) => {
         </View>
 
         {/* Insights */}
-        <View style={estilos.section}>
-          <Text style={estilos.sectionTitle}>💡 Insights</Text>
-          <View style={estilos.insightContainer}>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>💡 Insights</Text>
+          <View style={styles.insightContainer}>
             {gastosDoMesAtual.length > 0 && (
-              <Text style={estilos.insightText}>
+              <Text style={styles.insightText}>
                 • Você já gastou {formatCurrency(totalMesAtual)} este mês
               </Text>
             )}
             {estatisticas.totalItens > 0 && (
-              <Text style={estilos.insightText}>
+              <Text style={styles.insightText}>
                 • Sua média de gastos é de{" "}
                 {formatCurrency(estatisticas.gastoMedio)} por item
               </Text>
             )}
             {gastosPorMes.length > 1 && (
-              <Text style={estilos.insightText}>
+              <Text style={styles.insightText}>
                 • Você tem dados de {gastosPorMes.length} meses diferentes
               </Text>
             )}
             {estatisticas.maiorGasto > estatisticas.gastoMedio * 3 && (
-              <Text style={estilos.insightText}>
+              <Text style={styles.insightText}>
                 • Seu maior gasto foi{" "}
                 {Math.round(estatisticas.maiorGasto / estatisticas.gastoMedio)}x
                 maior que a média
@@ -328,7 +331,7 @@ const DashboardScreen = ({ navigation }) => {
         <BotaoAcao
           titulo="Ver Todos os Gastos"
           aoPressionar={() => navigation.navigate("Home")}
-          estilo={estilos.verTodosButton}
+          estilo={styles.verTodosButton}
         />
 
         <View style={{ height: 100 }} />
@@ -337,7 +340,7 @@ const DashboardScreen = ({ navigation }) => {
   );
 };
 
-const estilos = StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#1E1E2E",

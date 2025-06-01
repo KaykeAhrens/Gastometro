@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   Alert,
   ActivityIndicator,
@@ -22,7 +21,7 @@ const RegisterScreen = ({ navigation }) => {
   const [nome, setNome] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleRegister = async () => {
+  const realizarCadastro = async () => {
     if (senha !== confirmaSenha) {
       Alert.alert("Erro", "As senhas não coincidem");
       return;
@@ -33,25 +32,22 @@ const RegisterScreen = ({ navigation }) => {
       return;
     }
 
-    setLoading(true);
+    setLoading(true); // pra fazer uma animaçãozinha basica de quando clica no cadastrar
     try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        senha
-      );
+      await createUserWithEmailAndPassword(auth, email, senha);
       Alert.alert("Sucesso", "Usuário cadastrado com sucesso!");
       navigation.navigate("Login");
-    } catch (error) {
-      let errorMessage = "Erro ao cadastrar usuário";
-
-      if (error.code === "auth/email-already-in-use") {
-        errorMessage = "Este e-mail já está em uso";
-      } else if (error.code === "auth/invalid-email") {
-        errorMessage = "E-mail inválido";
+    } catch (erro) {
+      let msgErro = "Erro ao cadastrar usuário";
+      // aqui tratamos os erros que podem acontecer no cadastro
+      if (erro.code === "auth/email-already-in-use") {
+        // o createUserWithEmailAndPassword do firebase retorna uns padrões de erro, dxamos mais clean pro usuario
+        msgErro = "Este e-mail já está em uso";
+      } else if (erro.code === "auth/invalid-email") {
+        msgErro = "E-mail inválido";
       }
 
-      Alert.alert("Erro", errorMessage);
+      Alert.alert("Erro", msgErro);
     } finally {
       setLoading(false);
     }
@@ -125,13 +121,13 @@ const RegisterScreen = ({ navigation }) => {
 
           <TouchableOpacity
             style={styles.button}
-            onPress={handleRegister}
+            onPress={realizarCadastro}
             disabled={loading}
           >
             {loading ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <ActivityIndicator color="#FFFFFF" /> // se loading for true, mostra a animaçãozinha de carregar
             ) : (
-              <Text style={styles.buttonText}>Cadastrar</Text>
+              <Text style={styles.buttonText}>Cadastrar</Text> // se loading for false, mostra o texto cadastrar
             )}
           </TouchableOpacity>
 

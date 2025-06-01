@@ -26,72 +26,75 @@ import BotaoSimples from "../components/BotaoSimples";
 import ItemGasto from "../components/ItemGasto";
 
 const HomeScreen = ({ navigation }) => {
-  const { currentUser } = useAuth();
-  const [gastos, setGastos] = useState([]);
-  const [categorias, setCategorias] = useState([]);
-  const [saldoAtual, setSaldoAtual] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const { currentUser } = useAuth(); // pega o usuario logado
+  const [gastos, setGastos] = useState([]); // lista de gastos do usuário
+  const [categorias, setCategorias] = useState([]); // lista de categorias cadastradas
+  const [saldoAtual, setSaldoAtual] = useState(0); // saldo atual calculado
+  const [loading, setLoading] = useState(true); // pra fazer animação de carregamento
 
-  // Função para buscar categorias
-  const fetchCategorias = async () => {
+  // buscar categorias cadastradas
+  const buscarCategorias = async () => {
     if (!currentUser) return;
 
     try {
       const categoriasQuery = query(
-        collection(db, "categorias"),
-        where("userId", "==", currentUser.uid)
+        collection(db, "categorias"), // coleção de categorias no Firestore
+        where("userId", "==", currentUser.uid) // filtra por usuário logado  onde userId é o ID do usuário logado
       );
 
-      const snapshot = await getDocs(categoriasQuery);
-      const categoriasData = [];
+      const resultado = await getDocs(categoriasQuery);
+      const categoriasEncontradas = [];
 
-      snapshot.forEach((doc) => {
+      // percorre cada categoria adiciona ao array de categorias encontradas, incluindo também o ID de cada documento do Firestore.
+      resultado.forEach((doc) => {
         const data = doc.data();
-        categoriasData.push({
+        categoriasEncontradas.push({
           id: doc.id,
-          ...data,
+          ...data, // operador spread (...) para incluir todos os campos da categoria (id, nome, icone, cor, etc.)
         });
       });
 
-      setCategorias(categoriasData);
-    } catch (error) {
-      console.error("Erro ao buscar categorias:", error);
+      setCategorias(categoriasEncontradas);
+    } catch (erro) {
+      //console.log("Erro ao buscar categorias:");
     }
   };
 
-  // Função para buscar gastos
-  const fetchGastos = async () => {
+  // buscar os gastos do usuario logado
+  const buscarGastos = async () => {
     if (!currentUser) return;
 
     try {
-      console.log("Buscando gastos para o usuário:", currentUser.uid);
+      //console.log("Buscando gastos para o usuário:", currentUser.uid);
 
       const gastosQuery = query(
-        collection(db, "gastos"),
-        where("userId", "==", currentUser.uid)
+        collection(db, "gastos"), // coleção de gastos no Firestore
+        where("userId", "==", currentUser.uid) // filtra por usuário logado  onde userId é o ID do usuário logado
       );
 
-      const snapshot = await getDocs(gastosQuery);
-      console.log("Documentos encontrados:", snapshot.size);
+      const resultado = await getDocs(gastosQuery);
+      //console.log("Documentos encontrados:", resultado.size);
 
-      const gastosData = [];
+      const gastosEncontrados = [];
       let total = 0;
 
-      snapshot.forEach((doc) => {
+      resultado.forEach((doc) => {
         const data = doc.data();
         const gasto = {
           id: doc.id,
           ...data,
-          // Garantir que createdAt existe para ordenação
-          createdAt: data.createdAt || new Date(),
+          createdAt: data.createdAt || new Date(), // busca o createdAt do gasto no firestore ou define como a data atual se não existir
         };
-        console.log("Gasto encontrado:", gasto);
-        gastosData.push(gasto);
-        total += gasto.valor || 0;
+        //console.log("Gasto encontrado:", gasto);
+        gastosEncontrados.push(gasto);
+        total += gasto.valor || 0; // soma o valor do gasto ao total, se gasto.valor for null, soma 0.
       });
 
-      // Ordenar por data de criação (mais recente primeiro)
-      gastosData.sort((a, b) => {
+      // ordena por data de criação (mais recente primeiro)
+      // o campo createdAt vem como Timestamp do Firebase ent o código verifica se o campo createdAt tem o método .toDate() (o que indica que é um Timestamp do Firebase).
+      // se existir, converte corretamente usando .toDate();
+      // caso contrário, assume que já é uma data ou string válida e usa new Date().
+      gastosEncontrados.sort((a, b) => {
         const dateA = a.createdAt?.toDate
           ? a.createdAt.toDate()
           : new Date(a.createdAt);
@@ -101,27 +104,26 @@ const HomeScreen = ({ navigation }) => {
         return dateB - dateA;
       });
 
-      setGastos(gastosData);
+      setGastos(gastosEncontrados);
       setSaldoAtual(total);
       setLoading(false);
-    } catch (error) {
-      console.error("Erro ao buscar gastos:", error);
-      Alert.alert("Erro", "Erro ao carregar gastos: " + error.message);
+    } catch (erro) {
+      Alert.alert("Erro", "Erro ao carregar gastos");
       setLoading(false);
     }
   };
 
-  // Função para obter o ícone da categoria
+  // pega o ícone da categoria
   const obterIconeCategoria = (nomeCategoria) => {
-    if (!nomeCategoria) return "folder"; // Ícone padrão para "Outros"
+    if (!nomeCategoria) return "folder"; // icone padrão pra "outros"
 
     const categoria = categorias.find((cat) => cat.nome === nomeCategoria);
     return categoria ? categoria.icone : "folder";
   };
 
-  // Função para obter a cor da categoria
+  // pega a cor da categoria
   const obterCorCategoria = (nomeCategoria) => {
-    if (!nomeCategoria) return "#666"; // Cor padrão para "Outros"
+    if (!nomeCategoria) return "#666"; // cor padrão pra "outros"
 
     const categoria = categorias.find((cat) => cat.nome === nomeCategoria);
     return categoria ? categoria.cor : "#666";
@@ -130,37 +132,35 @@ const HomeScreen = ({ navigation }) => {
   useEffect(() => {
     if (!currentUser) return;
 
-    // Buscar dados iniciais
-    fetchCategorias();
-    fetchGastos();
+    buscarCategorias();
+    buscarGastos();
 
-    // Configurar listener para atualizações em tempo real dos gastos
     const gastosQuery = query(
-      collection(db, "gastos"),
-      where("userId", "==", currentUser.uid)
+      collection(db, "gastos"), // coleção de gastos no Firestore
+      where("userId", "==", currentUser.uid) // filtra por usuário logado  onde userId é o ID do usuário logado
     );
 
-    const unsubscribeGastos = onSnapshot(
+    // atualizacao em tempo real dos gastos
+    const atualizarGastos = onSnapshot(
       gastosQuery,
-      (snapshot) => {
-        console.log("Snapshot recebido:", snapshot.size, "documentos");
-        const gastosData = [];
+      (resultado) => {
+        const gastosEncontrados = [];
         let total = 0;
 
-        snapshot.forEach((doc) => {
+        // percorre cada gasto retornado pelo snapshot
+        resultado.forEach((doc) => {
           const data = doc.data();
           const gasto = {
             id: doc.id,
             ...data,
             createdAt: data.createdAt || new Date(),
           };
-          console.log("Gasto do snapshot:", gasto);
-          gastosData.push(gasto);
+          gastosEncontrados.push(gasto);
           total += gasto.valor || 0;
         });
 
-        // Ordenar por data de criação
-        gastosData.sort((a, b) => {
+        // ordena por data de criação
+        gastosEncontrados.sort((a, b) => {
           const dateA = a.createdAt?.toDate
             ? a.createdAt.toDate()
             : new Date(a.createdAt);
@@ -170,60 +170,58 @@ const HomeScreen = ({ navigation }) => {
           return dateB - dateA;
         });
 
-        setGastos(gastosData);
+        setGastos(gastosEncontrados);
         setSaldoAtual(total);
         setLoading(false);
       },
-      (error) => {
-        console.error("Erro no listener:", error);
+      (erro) => {
         Alert.alert("Erro", "Erro ao carregar gastos em tempo real");
         setLoading(false);
       }
     );
 
-    // Configurar listener para atualizações em tempo real das categorias
     const categoriasQuery = query(
-      collection(db, "categorias"),
-      where("userId", "==", currentUser.uid)
+      collection(db, "categorias"), // coleção de categorias no Firestore
+      where("userId", "==", currentUser.uid) // filtra por usuário logado  onde userId é o ID do usuário logado
     );
 
-    const unsubscribeCategorias = onSnapshot(categoriasQuery, (snapshot) => {
-      const categoriasData = [];
-      snapshot.forEach((doc) => {
-        categoriasData.push({ id: doc.id, ...doc.data() });
+    // atualizacao em tempo real das categorias
+    // onSnapshot em Firestore serve para criar um ouvinte (listener) que permite receber atualizações em tempo real de dados em uma coleção ou documento sem ter q fzr varias consultas
+    const atualizarCategorias = onSnapshot(categoriasQuery, (resultado) => {
+      const categoriasEncontradas = [];
+      resultado.forEach((doc) => {
+        categoriasEncontradas.push({ id: doc.id, ...doc.data() });
       });
-      setCategorias(categoriasData);
+      setCategorias(categoriasEncontradas);
     });
 
     return () => {
-      unsubscribeGastos();
-      unsubscribeCategorias();
+      atualizarGastos();
+      atualizarCategorias();
     };
   }, [currentUser]);
 
-  // Recarregar dados quando a tela ganha foco
+  // recarregar dados quando a tela aparecer
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
-      console.log("Tela HomeScreen ganhou foco - recarregando dados");
       if (currentUser) {
-        fetchCategorias();
-        fetchGastos();
+        buscarCategorias();
+        buscarGastos();
       }
     });
 
     return unsubscribe;
   }, [navigation, currentUser]);
 
-  const handleLogout = async () => {
+  const realizarLogout = async () => {
     try {
-      await signOut(auth);
-    } catch (error) {
-      console.error("Erro ao fazer logout:", error);
+      await signOut(auth); // executa o logout usando o Firebase Auth
+    } catch (erro) {
       Alert.alert("Erro", "Erro ao fazer logout");
     }
   };
 
-  const handleDeleteGasto = async (gastoId) => {
+  const deletarGasto = async (gastoId) => {
     Alert.alert("Confirmar", "Tem certeza que deseja excluir este gasto?", [
       { text: "Cancelar", style: "cancel" },
       {
@@ -231,10 +229,10 @@ const HomeScreen = ({ navigation }) => {
         style: "destructive",
         onPress: async () => {
           try {
+            // deleta o gasto no Firestore pelo ID
             await deleteDoc(doc(db, "gastos", gastoId));
             Alert.alert("Sucesso", "Gasto excluído com sucesso!");
-          } catch (error) {
-            console.error("Erro ao excluir gasto:", error);
+          } catch (erro) {
             Alert.alert("Erro", "Erro ao excluir gasto");
           }
         },
@@ -242,11 +240,13 @@ const HomeScreen = ({ navigation }) => {
     ]);
   };
 
-  const handleEditGasto = (gasto) => {
+  const editarGasto = (gasto) => {
+    // navega para a tela "EditarGasto" enviando o gasto selecionado como parâmetro
     navigation.navigate("EditarGasto", { gasto });
   };
 
   const formatCurrency = (value) => {
+    // formata número para moeda brasileira
     if (typeof value !== "number") return "R$ 0,00";
     return `R$ ${value.toFixed(2).replace(".", ",")}`;
   };
@@ -254,8 +254,8 @@ const HomeScreen = ({ navigation }) => {
   const renderGastoItem = ({ item }) => (
     <ItemGasto
       gasto={item}
-      aoPressionar={handleEditGasto}
-      aoPressionarLongo={handleDeleteGasto}
+      aoPressionar={editarGasto}
+      aoPressionarLongo={deletarGasto}
       obterIconeCategoria={obterIconeCategoria}
       obterCorCategoria={obterCorCategoria}
     />
@@ -272,7 +272,7 @@ const HomeScreen = ({ navigation }) => {
         </View>
         <BotaoSimples
           titulo="Sair"
-          aoPressionar={handleLogout}
+          aoPressionar={realizarLogout}
           corTexto="#4D8FAC"
         />
       </View>

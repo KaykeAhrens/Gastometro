@@ -1,4 +1,3 @@
-// Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import {
   initializeAuth,
@@ -8,7 +7,7 @@ import {
 import { getFirestore } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// Configuração do Firebase
+// configs do firebase
 const firebaseConfig = {
   apiKey: "AIzaSyDL0YZ75AApdBhQBPujPraukjN3lSSQOOs",
   authDomain: "gastmetro.firebaseapp.com",
@@ -19,24 +18,24 @@ const firebaseConfig = {
   measurementId: "G-7WG9YRLY98",
 };
 
-// Initialize Firebase
+// inicia o firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firebase Auth com persistência para React Native
-// Tenta usar initializeAuth primeiro, se falhar usa getAuth (fallback para web)
+// tenta usar initializeAuth primeiro, se falhar usa getAuth
+// (problema se a pessoa já está logada na web)
 let auth;
 try {
   auth = initializeAuth(app, {
     persistence: getReactNativePersistence(AsyncStorage),
   });
 } catch (error) {
-  // Se initializeAuth falhar (ex: já foi inicializado), usa getAuth
+  // se initializeAuth falhar, usa getAuth
   auth = getAuth(app);
 }
 
 export { auth };
 
-// Initialize Firestore
+// inicia o firestore
 export const db = getFirestore(app);
 
 export default app;

@@ -10,12 +10,12 @@ import {
 
 const SplashScreen = ({ navigation }) => {
   useEffect(() => {
-    // Navega para a tela de login após 2 segundos
-    const timer = setTimeout(() => {
+    // vai pra tela de login dps de 2 segundos
+    const cronometro = setTimeout(() => {
       navigation.replace("Login");
     }, 2000);
- 
-    return () => clearTimeout(timer);
+
+    return () => clearTimeout(cronometro);
   }, [navigation]);
 
   return (
@@ -28,7 +28,7 @@ const SplashScreen = ({ navigation }) => {
             source={require("../../assets/images/logo.png")}
             style={styles.logo}
           />
-          <Text style={styles.appNameSplash}>Gastômetro</Text>
+          <Text style={styles.nomeApp}>Gastômetro</Text>
         </View>
       </View>
     </SafeAreaView>
@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
     borderRadius: 60,
     backgroundColor: "#2A2A3C",
   },
-  appNameSplash: {
+  nomeApp: {
     marginTop: 15,
     fontSize: 24,
     color: "white",

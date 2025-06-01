@@ -19,31 +19,30 @@ import EditarGastoScreen from "../screens/EditarGastoScreen";
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// Ícone customizado para as abas
+// icone customizado para as abas
 const TabIcon = ({ focused, name, color, size }) => {
-  let iconName;
+  let nomeIcone;
 
   switch (name) {
     case "Home":
-      iconName = "home";
+      nomeIcone = "home";
       break;
     case "Dashboard":
-      iconName = "dashboard";
+      nomeIcone = "dashboard";
       break;
     case "Categorias":
-      iconName = "folder";
+      nomeIcone = "folder";
       break;
     case "Perfil":
-      iconName = "person";
+      nomeIcone = "person";
       break;
     default:
-      iconName = "help-outline";
+      nomeIcone = "help-outline";
   }
 
-  return <Icon name={iconName} size={size} color={color} />;
+  return <Icon name={nomeIcone} size={size} color={color} />;
 };
 
-// Navegador de abas principais
 const MainTabNavigator = () => {
   return (
     <Tab.Navigator
