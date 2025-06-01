@@ -10,7 +10,6 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import BotaoAcao from "./BotaoAcao";
-import BotaoSimples from "./BotaoSimples";
 import CampoInput from "./CampoInput";
 
 const { width } = Dimensions.get("window");
@@ -22,6 +21,7 @@ const ModalCategoria = ({
   alterarDadosFormulario,
   aoFechar,
   aoSalvar,
+  aoExcluir,
   salvando,
 }) => {
   const icones = [
@@ -67,16 +67,29 @@ const ModalCategoria = ({
     >
       <View style={styles.modalOverlay}>
         <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>
+          <View style={styles.headerModal}>
+            <Text style={styles.tituloModal}>
               {editandoCategoria ? "Editar Categoria" : "Nova Categoria"}
             </Text>
-            <TouchableOpacity
-              style={styles.modalCloseButton}
-              onPress={aoFechar}
-            >
-              <Text style={styles.modalCloseText}>×</Text>
-            </TouchableOpacity>
+            <View style={styles.headerAcaoBotao}>
+              {editandoCategoria && aoExcluir && (
+                <TouchableOpacity
+                  style={styles.botaoModalDeletar}
+                  onPress={() => {
+                    console.log("Botão de excluir pressionado");
+                    aoExcluir(editandoCategoria);
+                  }}
+                >
+                  <Icon name="delete" size={20} color="#E74C3C" />
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                style={styles.botaoModalFechar}
+                onPress={aoFechar}
+              >
+                <Text style={styles.textoModalFechar}>×</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           <ScrollView style={styles.modalContent}>
@@ -106,9 +119,9 @@ const ModalCategoria = ({
                   <TouchableOpacity
                     key={icone}
                     style={[
-                      styles.iconOption,
+                      styles.opcaoIcone,
                       dadosFormulario.icone === icone &&
-                        styles.iconOptionSelected,
+                        styles.iconeOpcaoSelecionada,
                     ]}
                     onPress={() =>
                       alterarDadosFormulario({ ...dadosFormulario, icone })
@@ -127,9 +140,9 @@ const ModalCategoria = ({
                   <TouchableOpacity
                     key={cor}
                     style={[
-                      styles.colorOption,
+                      styles.opcaoCor,
                       { backgroundColor: cor },
-                      dadosFormulario.cor === cor && styles.colorOptionSelected,
+                      dadosFormulario.cor === cor && styles.opcaoCorSelecionada,
                     ]}
                     onPress={() =>
                       alterarDadosFormulario({ ...dadosFormulario, cor })
@@ -140,7 +153,7 @@ const ModalCategoria = ({
             </View>
           </ScrollView>
 
-          <View style={styles.modalActions}>
+          <View style={styles.acaoModal}>
             <BotaoAcao
               titulo="Cancelar"
               aoPressionar={aoFechar}
@@ -174,7 +187,7 @@ const styles = StyleSheet.create({
     width: width - 40,
     maxHeight: "80%",
   },
-  modalHeader: {
+  headerModal: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -182,15 +195,30 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#3A3A4C",
   },
-  modalTitle: {
+  tituloModal: {
     color: "white",
     fontSize: 18,
     fontWeight: "bold",
+    flex: 1,
   },
-  modalCloseButton: {
+  headerAcaoBotao: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  botaoModalDeletar: {
+    padding: 5,
+    backgroundColor: "#E74C3C20",
+    borderRadius: 6,
+    width: 36,
+    height: 36,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  botaoModalFechar: {
     padding: 5,
   },
-  modalCloseText: {
+  textoModalFechar: {
     color: "#4D8FAC",
     fontSize: 24,
     fontWeight: "bold",
@@ -212,7 +240,7 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 10,
   },
-  iconOption: {
+  opcaoIcone: {
     backgroundColor: "#3A3A4C",
     padding: 12,
     borderRadius: 8,
@@ -220,7 +248,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  iconOptionSelected: {
+  iconeOpcaoSelecionada: {
     backgroundColor: "#4D8FAC",
   },
   colorGrid: {
@@ -228,17 +256,17 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 10,
   },
-  colorOption: {
+  opcaoCor: {
     width: 40,
     height: 40,
     borderRadius: 20,
     borderWidth: 3,
     borderColor: "transparent",
   },
-  colorOptionSelected: {
+  opcaoCorSelecionada: {
     borderColor: "white",
   },
-  modalActions: {
+  acaoModal: {
     flexDirection: "row",
     padding: 20,
     gap: 10,

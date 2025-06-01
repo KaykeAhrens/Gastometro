@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, Alert, Modal } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  Modal,
+  FlatList,
+  TouchableOpacity,
+} from "react-native";
 import { useAuth } from "../contexts/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import BotaoAcao from "../components/BotaoAcao";
@@ -7,34 +16,31 @@ import BotaoSimples from "../components/BotaoSimples";
 import CampoInput from "../components/CampoInput";
 
 const PerfilScreen = () => {
-  const { currentUser, logout } = useAuth(); // pega o usuario logado e a função de logout
-  const [saldoAtual, setSaldoAtual] = useState(""); // valor digitado do saldo
-  const [saldosMensais, setSaldosMensais] = useState([]); // lista de saldos salvos
-  const [editandoPerfil, setEditandoPerfil] = useState(false); // muda entre visualização e edição do perfil
+  const { currentUser, logout } = useAuth();
+  const [saldoAtual, setSaldoAtual] = useState("");
+  const [saldosMensais, setSaldosMensais] = useState([]);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [editandoPerfil, setEditandoPerfil] = useState(false);
   const [perfilUsuario, setPerfilUsuario] = useState({
     nome: "",
     telefone: "",
     dataNascimento: "",
     profissao: "",
-  }); // informações do perfil do usuário
+  });
 
-  // puxa os dados salvos no AsyncStorage
   useEffect(() => {
     carregarDados();
   }, []);
 
-  // carrega o perfil e os saldos salvos localmente, com base no uid (userId) q vem do firebase
   const carregarDados = async () => {
     try {
-      // o AsyncStorage só salva strings, por isso usamos JSON.stringify ao salvar objetos e JSON.parse ao ler
       const saldosSalvos = await AsyncStorage.getItem(
-        `saldos_${currentUser?.uid}` // verifica se o usuario está logado (nao é null), pega o uid e concatena com a string "saldos_"
+        `saldos_${currentUser?.uid}`
       );
       const perfilSalvo = await AsyncStorage.getItem(
-        `perfil_${currentUser?.uid}` // verifica se o usuario está logado (nao é null), pega o uid e concatena com a string "perfil_"
+        `perfil_${currentUser?.uid}`
       );
 
-      // se achar os dados, atualiza o estado da tela
       if (saldosSalvos) {
         setSaldosMensais(JSON.parse(saldosSalvos));
       }
@@ -42,16 +48,15 @@ const PerfilScreen = () => {
         setPerfilUsuario(JSON.parse(perfilSalvo));
       }
     } catch (erro) {
-      //console.log("Erro ao carregar dados");
+      console.log("Erro ao carregar dados:", erro);
     }
   };
 
   const obterMesAnoAtual = () => {
     const agora = new Date();
-    return `${agora.getMonth() + 1}/${agora.getFullYear()}`; // + 1 pq os meses em js comeca do 0 (jan)
+    return `${agora.getMonth() + 1}/${agora.getFullYear()}`;
   };
 
-  // salva um novo saldo para o mês atual, validando o q foi digitado
   const salvarSaldoMensal = async () => {
     if (!saldoAtual.trim())
       return Alert.alert("Erro", "Por favor, insira um valor para o saldo.");
@@ -62,24 +67,22 @@ const PerfilScreen = () => {
 
     const mesAno = obterMesAnoAtual();
     const novoSaldo = {
-      id: Date.now().toString(), // gera um ID único com base na hora atual
+      id: Date.now().toString(),
       mesAno,
       valor: valorSaldo,
       dataRegistro: new Date().toLocaleDateString("pt-BR"),
     };
 
-    const saldoExistente = saldosMensais.find((s) => s.mesAno === mesAno); // procura e retorna o saldo se o mesAno for igual ao mesAno atual ou null se n tiver nenhum
+    const saldoExistente = saldosMensais.find((s) => s.mesAno === mesAno);
     let novosSaldos;
 
     if (saldoExistente) {
-      // se já existe um saldo para o mês, pergunta se quer substituir
       Alert.alert(
         "Saldo Existente",
         `Já existe um saldo de R$ ${saldoExistente.valor.toFixed(
           2
         )} para ${mesAno}. Deseja substituir?`,
         [
-          // botões do alert
           { text: "Cancelar", style: "cancel" },
           {
             text: "Substituir",
@@ -93,12 +96,6 @@ const PerfilScreen = () => {
         ]
       );
     } else {
-      // se n existe, cria um novo array com os saldos antigos e o novo saldo, depois ordena por data decrescente.
-      // pra ordenar, convertemos a string mesAno ("MM/YYYY") em Date
-      // separamos a string pelo "/" -> ["MM", "YYYY"]
-      // reverse para inverter a ordem -> ["YYYY", "MM"]
-      // Junta com "-" -> "YYYY-MM", um formato reconhecido pelo Date
-      // subtrai as datas para ordenar
       novosSaldos = [...saldosMensais, novoSaldo].sort(
         (a, b) =>
           new Date(b.mesAno.split("/").reverse().join("-")) -
@@ -108,7 +105,6 @@ const PerfilScreen = () => {
     }
   };
 
-  // atualiza a lista de saldos no estado e no armazenamento local
   const atualizarSaldos = async (novosSaldos) => {
     try {
       setSaldosMensais(novosSaldos);
@@ -120,11 +116,9 @@ const PerfilScreen = () => {
       Alert.alert("Sucesso", "Saldo mensal salvo com sucesso!");
     } catch (erro) {
       Alert.alert("Erro", "Erro ao salvar saldo mensal.");
-      //console.log("Erro ao atualizar saldos");
     }
   };
 
-  // valida se a data de nascimento está no formato correto e é uma data real
   const dataValida = (data) => {
     const partes = data.split("/");
     if (partes.length !== 3) return false;
@@ -141,13 +135,12 @@ const PerfilScreen = () => {
       dia > 31 ||
       mes < 1 ||
       mes > 12 ||
-      ano < 1900 // algm tem mais que 125 anos hoje em dia? 😅
+      ano < 1900
     ) {
       return false;
     }
 
-    // se a data for inválida, o objeto Date vai corrigir
-    const dataObj = new Date(ano, mes - 1, dia); // mes - 1 pq em js os meses começam do 0 (jan = 0))
+    const dataObj = new Date(ano, mes - 1, dia);
     return (
       dataObj.getFullYear() === ano &&
       dataObj.getMonth() === mes - 1 &&
@@ -155,11 +148,10 @@ const PerfilScreen = () => {
     );
   };
 
-  // salva as informações do perfil do usuário no armazenamento local
   const salvarPerfilUsuario = async () => {
     const { dataNascimento } = perfilUsuario;
 
-    if (!dataValida(dataNascimento)) {
+    if (dataNascimento && !dataValida(dataNascimento)) {
       return Alert.alert("Erro", "Data de nascimento inválida.");
     }
 
@@ -175,9 +167,8 @@ const PerfilScreen = () => {
     }
   };
 
-  // exclui um saldo mensal com base no ID
   const excluirSaldo = async (id) => {
-    const novosSaldos = saldosMensais.filter((s) => s.id !== id); // filtra os saldos, removendo o que tem o ID igual ao passado
+    const novosSaldos = saldosMensais.filter((s) => s.id !== id);
     try {
       setSaldosMensais(novosSaldos);
       await AsyncStorage.setItem(
@@ -197,32 +188,35 @@ const PerfilScreen = () => {
         <Text style={styles.saldoValor}>R$ {item.valor.toFixed(2)}</Text>
         <Text style={styles.saldoData}>Registrado em: {item.dataRegistro}</Text>
       </View>
-      <TouchableOpacity onPress={() => excluirSaldo(item.id)}>
+      <TouchableOpacity
+        style={styles.botaoExcluir}
+        onPress={() => excluirSaldo(item.id)}
+      >
         <Text style={styles.textoExcluir}>✕</Text>
       </TouchableOpacity>
     </View>
   );
 
   const formatarTelefone = (text) => {
-    const apenasNumeros = text.replace(/\D/g, ""); // /\D/ é uma expressão regular (valeu celso <3) que remove qqr caractere que n seja um numero e g aplica tudo q for encontrado
+    const apenasNumeros = text.replace(/\D/g, "");
     let formatado = "";
     if (apenasNumeros.length > 0)
-      formatado = `(${apenasNumeros.substring(0, 2)}`; // pega os dois primeiros numeros e coloca entre parenteses
+      formatado = `(${apenasNumeros.substring(0, 2)}`;
     if (apenasNumeros.length > 2)
-      formatado += `) ${apenasNumeros.substring(2, 7)}`; // pega os proximos 5 numeros e coloca um espaço depois do parenteses
+      formatado += `) ${apenasNumeros.substring(2, 7)}`;
     if (apenasNumeros.length > 7)
-      formatado += `-${apenasNumeros.substring(7, 11)}`; // pega os proximos 4 numeros e coloca um traço antes
+      formatado += `-${apenasNumeros.substring(7, 11)}`;
     return formatado;
   };
 
   const formatarData = (text) => {
     const apenasNumeros = text.replace(/\D/g, "");
     let formatado = "";
-    if (apenasNumeros.length > 0) formatado = apenasNumeros.substring(0, 2); // dois primeiros digitos como dia
+    if (apenasNumeros.length > 0) formatado = apenasNumeros.substring(0, 2);
     if (apenasNumeros.length > 2)
-      formatado += `/${apenasNumeros.substring(2, 4)}`; // dois proximos digitos como mes
+      formatado += `/${apenasNumeros.substring(2, 4)}`;
     if (apenasNumeros.length > 4)
-      formatado += `/${apenasNumeros.substring(4, 8)}`; // quatro proximos digitos como ano
+      formatado += `/${apenasNumeros.substring(4, 8)}`;
     return formatado;
   };
 
@@ -238,7 +232,7 @@ const PerfilScreen = () => {
         <Text style={styles.userInfo}>Email: {currentUser?.email}</Text>
         <Text style={styles.userInfo}>
           Conta criada:{" "}
-          {currentUser?.metadata?.creationTime // a data vem do Firebase Authentication (metadata é uma propriedade do currentUser)
+          {currentUser?.metadata?.creationTime
             ? new Date(currentUser.metadata.creationTime).toLocaleDateString(
                 "pt-BR"
               )
@@ -330,6 +324,61 @@ const PerfilScreen = () => {
         />
         <BotaoAcao titulo="Salvar" aoPressionar={salvarSaldoMensal} />
       </View>
+
+      {/* Histórico de Saldos */}
+      <View style={styles.secao}>
+        <View style={styles.headerSecao}>
+          <Text style={styles.subtitulo}>Histórico de Saldos</Text>
+          <BotaoSimples
+            titulo={`Ver Todos (${saldosMensais.length})`}
+            aoPressionar={() => setModalVisible(true)}
+          />
+        </View>
+
+        {saldosMensais.length > 0 ? (
+          <View>
+            {saldosMensais.slice(0, 3).map((item) => (
+              <View key={item.id} style={styles.saldoItemResumido}>
+                <Text style={styles.saldoMesResumido}>{item.mesAno}</Text>
+                <Text style={styles.saldoValorResumido}>
+                  R$ {item.valor.toFixed(2)}
+                </Text>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.textoVazio}>Nenhum saldo registrado ainda</Text>
+        )}
+      </View>
+
+      {/* Modal do Histórico Completo */}
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Histórico Completo de Saldos</Text>
+            <BotaoSimples
+              titulo="Fechar"
+              aoPressionar={() => setModalVisible(false)}
+            />
+          </View>
+          <FlatList
+            data={saldosMensais}
+            renderItem={renderSaldoItem}
+            keyExtractor={(item) => item.id}
+            style={styles.lista}
+            ListEmptyComponent={
+              <Text style={styles.textoVazioModal}>
+                Nenhum saldo registrado
+              </Text>
+            }
+          />
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -373,18 +422,57 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     lineHeight: 22,
   },
-  textoExcluir: {
-    color: "#E74C3C",
-    fontSize: 20,
-    padding: 8,
-  },
-  saldoItem: {
+  saldoItemResumido: {
     flexDirection: "row",
     justifyContent: "space-between",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#3C3C54",
+  },
+  saldoMesResumido: {
+    color: "#BDC3C7",
+    fontSize: 16,
+  },
+  saldoValorResumido: {
+    color: "#27AE60",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  textoVazio: {
+    color: "#8B8B8B",
+    fontSize: 16,
+    textAlign: "center",
+    marginTop: 10,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "#1E1E2E",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#3C3C54",
+  },
+  modalTitle: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  lista: {
+    flex: 1,
+    padding: 15,
+  },
+  saldoItem: {
     backgroundColor: "#2A2A3E",
     padding: 15,
     borderRadius: 8,
     marginBottom: 10,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   saldoInfo: {
     flex: 1,
@@ -397,10 +485,33 @@ const styles = StyleSheet.create({
   saldoValor: {
     color: "#27AE60",
     fontSize: 18,
+    fontWeight: "bold",
+    marginTop: 5,
   },
   saldoData: {
-    color: "#999",
-    fontSize: 14,
+    color: "#8B8B8B",
+    fontSize: 12,
+    marginTop: 3,
+  },
+  botaoExcluir: {
+    backgroundColor: "#2A2A3C",
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 10,
+  },
+  textoExcluir: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  textoVazioModal: {
+    color: "#8B8B8B",
+    fontSize: 16,
+    textAlign: "center",
+    marginTop: 50,
   },
 });
 

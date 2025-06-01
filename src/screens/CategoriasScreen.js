@@ -200,24 +200,21 @@ const CategoriasScreen = ({ navigation }) => {
     setModalVisible(true);
   };
 
-  const deletarCategoria = (categoria) => {
-    Alert.alert("Confirmar", "Tem certeza que deseja excluir esta categoria?", [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Excluir",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            // deleta a categoria no Firestore pelo ID
-            await deleteDoc(doc(db, "categorias", categoria.id));
-            Alert.alert("Sucesso", "Categoria excluída com sucesso!");
-          } catch (erro) {
-            //console.log("Erro ao excluir categoria");
-            Alert.alert("Erro", "Erro ao excluir categoria");
-          }
-        },
-      },
-    ]);
+  const deletarCategoria = async (categoria) => {
+    console.log("Função deletarCategoria chamada com:", categoria);
+
+    try {
+      console.log("Iniciando exclusão da categoria:", categoria.id);
+      // deleta a categoria no Firestore pelo ID
+      await deleteDoc(doc(db, "categorias", categoria.id));
+      console.log("Categoria excluída com sucesso!");
+      // fechar o modal após excluir
+      closeModal();
+    } catch (erro) {
+      console.log("Erro ao excluir categoria:", erro);
+      // Se quiser mostrar algum feedback de erro, pode usar console.log ou outro método
+      console.error("Erro ao excluir categoria:", erro.message);
+    }
   };
 
   const formatCurrency = (value) => {
@@ -352,6 +349,7 @@ const CategoriasScreen = ({ navigation }) => {
         alterarDadosFormulario={setFormDados}
         aoFechar={closeModal}
         aoSalvar={salvarCategoria}
+        aoExcluir={deletarCategoria}
         salvando={salvando}
       />
     </SafeAreaView>
