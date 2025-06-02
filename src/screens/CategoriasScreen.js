@@ -201,19 +201,17 @@ const CategoriasScreen = ({ navigation }) => {
   };
 
   const deletarCategoria = async (categoria) => {
-    console.log("Função deletarCategoria chamada com:", categoria);
+    //console.log("Função deletarCategoria chamada");
 
     try {
-      console.log("Iniciando exclusão da categoria:", categoria.id);
+      //console.log("Iniciando exclusão da categoria");
       // deleta a categoria no Firestore pelo ID
       await deleteDoc(doc(db, "categorias", categoria.id));
-      console.log("Categoria excluída com sucesso!");
+      //console.log("Categoria excluída com sucesso!");
       // fechar o modal após excluir
       closeModal();
     } catch (erro) {
-      console.log("Erro ao excluir categoria:", erro);
-      // Se quiser mostrar algum feedback de erro, pode usar console.log ou outro método
-      console.error("Erro ao excluir categoria:", erro.message);
+      //console.log("Erro ao excluir categoria:", erro);
     }
   };
 
